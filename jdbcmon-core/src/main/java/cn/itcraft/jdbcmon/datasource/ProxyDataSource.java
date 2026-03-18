@@ -1,15 +1,18 @@
 package cn.itcraft.jdbcmon.datasource;
 
 import cn.itcraft.jdbcmon.config.ProxyConfig;
-import cn.itcraft.jdbcmon.core.ConnectionProxyHandler;
+import cn.itcraft.jdbcmon.config.ProxyMode;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
+import cn.itcraft.jdbcmon.proxy.reflection.ReflectionProxyFactory;
+import cn.itcraft.jdbcmon.proxy.wrapper.WrapperProxyFactory;
+import cn.itcraft.jdbcmon.spi.JdbcProxyFactory;
 
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Objects;
-import java.util.logging.Logger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.sql.DataSource;
 
@@ -18,11 +21,24 @@ public final class ProxyDataSource implements DataSource {
     private final DataSource target;
     private final SqlMonitor sqlMonitor;
     private final ProxyConfig config;
+    private final JdbcProxyFactory proxyFactory;
+    private final AtomicLong proxyIdGenerator = new AtomicLong();
 
     public ProxyDataSource(DataSource target, ProxyConfig config) {
         this.target = Objects.requireNonNull(target, "target cannot be null");
         this.config = config != null ? config : new ProxyConfig.Builder().build();
         this.sqlMonitor = new SqlMonitor(this.config);
+        this.proxyFactory = createProxyFactory(this.config.getProxyMode());
+    }
+
+    private JdbcProxyFactory createProxyFactory(ProxyMode mode) {
+        switch (mode) {
+            case WRAPPER:
+                return new WrapperProxyFactory();
+            case REFLECTION:
+            default:
+                return new ReflectionProxyFactory();
+        }
     }
 
     @Override
@@ -41,12 +57,8 @@ public final class ProxyDataSource implements DataSource {
         if (conn == null) {
             return null;
         }
-
-        return (Connection) java.lang.reflect.Proxy.newProxyInstance(
-            conn.getClass().getClassLoader(),
-            new Class[]{Connection.class},
-            new ConnectionProxyHandler(conn, sqlMonitor, config, System.identityHashCode(this))
-        );
+        long proxyId = proxyIdGenerator.incrementAndGet();
+        return proxyFactory.wrapConnection(conn, sqlMonitor, config);
     }
 
     @Override

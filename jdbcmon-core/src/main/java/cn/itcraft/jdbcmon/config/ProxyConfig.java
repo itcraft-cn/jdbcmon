@@ -8,6 +8,8 @@ import static cn.itcraft.jdbcmon.consts.JdbcConsts.*;
 
 public final class ProxyConfig {
 
+    private ProxyMode proxyMode = ProxyMode.WRAPPER;
+    
     private boolean enableMonitoring = true;
     private long slowQueryThresholdMs = DEFAULT_SLOW_QUERY_THRESHOLD_MS;
     private boolean logSlowQueries = true;
@@ -37,6 +39,10 @@ public final class ProxyConfig {
     private int adaptiveWindowSizeSeconds = ADAPTIVE_WINDOW_SIZE_SECONDS;
 
     private ProxyConfig() {
+    }
+
+    public ProxyMode getProxyMode() {
+        return proxyMode;
     }
 
     public boolean isEnableMonitoring() {
@@ -150,6 +156,11 @@ public final class ProxyConfig {
 
     public static class Builder {
         private final ProxyConfig config = new ProxyConfig();
+
+        public Builder proxyMode(ProxyMode mode) {
+            config.proxyMode = mode;
+            return this;
+        }
 
         public Builder enableMonitoring(boolean enable) {
             config.enableMonitoring = enable;

@@ -49,6 +49,69 @@ public final class SqlMonitor {
         }
     }
 
+    // ========== 简化 API（套壳模式使用）==========
+
+    public void recordQuery(String sql, long elapsedNanos) {
+        if (sql == null || sql.isEmpty()) {
+            return;
+        }
+        totalQueries.increment();
+        SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics());
+        metrics.recordSuccess(elapsedNanos, null);
+        checkSlowQuerySimple(sql, elapsedNanos);
+    }
+
+    public void recordUpdate(String sql, long elapsedNanos, int rows) {
+        if (sql == null || sql.isEmpty()) {
+            return;
+        }
+        totalUpdates.increment();
+        SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics());
+        metrics.recordSuccess(elapsedNanos, rows);
+        checkSlowQuerySimple(sql, elapsedNanos);
+    }
+
+    public void recordBatch(String sql, long elapsedNanos, int[] rows) {
+        if (sql == null || sql.isEmpty()) {
+            sql = "BATCH_EXECUTION";
+        }
+        totalBatchOps.increment();
+        SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics());
+        metrics.recordSuccess(elapsedNanos, rows);
+        checkSlowQuerySimple(sql, elapsedNanos);
+    }
+
+    public void recordTransaction(String operation, long elapsedNanos) {
+        totalUpdates.increment();
+        String sql = "TRANSACTION_" + operation.toUpperCase();
+        SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics());
+        metrics.recordSuccess(elapsedNanos, null);
+    }
+
+    public void recordError(String sql, long elapsedNanos, Throwable t) {
+        totalErrors.increment();
+        if (sql == null || sql.isEmpty()) {
+            sql = "UNKNOWN_SQL";
+        }
+        SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics());
+        metrics.recordFailure(elapsedNanos, t);
+    }
+
+    private void checkSlowQuerySimple(String sql, long elapsedNanos) {
+        long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(elapsedNanos);
+        long threshold = getSlowQueryThreshold();
+
+        if (elapsedMillis > threshold) {
+            totalSlowQueries.increment();
+            if (config.isLogSlowQueries()) {
+                log.warn("[SLOW_SQL] {}ms (threshold: {}ms) - {}", 
+                    elapsedMillis, threshold, sql);
+            }
+        }
+    }
+
+    // ========== 原有 API（反射模式使用）==========
+
     public void recordSuccess(SqlExecutionContext context, long elapsedNanos, Object result) {
         long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(elapsedNanos);
         String sql = context.getSql();
