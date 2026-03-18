@@ -12,8 +12,8 @@ echo "Running benchmarks with JDK 17"
 echo "========================================"
 
 echo ""
-echo "[1/3] Building all modules..."
-$MVN clean package -Pjdk17 -DskipTests -q 2>/dev/null
+echo "[1/2] Building all modules..."
+$MVN clean package -Pjdk17 -pl jdbcmon-core,jdbcmon-test -am -DskipTests -q 2>/dev/null
 
 if [ $? -ne 0 ]; then
     echo "ERROR: Build failed"
@@ -24,11 +24,7 @@ cd jdbcmon-test
 $MVN dependency:copy-dependencies -DoutputDirectory=target/dependency -q 2>/dev/null
 
 echo ""
-echo "[2/3] Recompiling test sources for JMH..."
-$MVN test-compile -Pjdk17 -q 2>/dev/null
-
-echo ""
-echo "[3/3] Running benchmarks..."
+echo "[2/2] Running benchmarks..."
 echo ""
 
 CP="target/test-classes:../jdbcmon-core/target/jdbcmon-core-1.0.0-SNAPSHOT-jdk17.jar:target/dependency/*"
