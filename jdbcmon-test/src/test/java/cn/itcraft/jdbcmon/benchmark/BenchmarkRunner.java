@@ -14,7 +14,7 @@ public class BenchmarkRunner {
                 .include(".*" + include + ".*")
                 .warmupIterations(5)
                 .measurementIterations(3)
-                .forks(0)
+                .forks(1)
                 .threads(1)
                 .shouldFailOnError(true)
                 .shouldDoGC(true)

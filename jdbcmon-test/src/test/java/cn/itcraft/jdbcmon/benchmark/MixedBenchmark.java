@@ -99,6 +99,7 @@ public class MixedBenchmark {
     private void initTestData(DataSource ds) throws Exception {
         try (Connection conn = ds.getConnection();
              Statement stmt = conn.createStatement()) {
+            stmt.execute("DROP TABLE IF EXISTS test_mixed");
             stmt.execute("CREATE TABLE test_mixed (id INT PRIMARY KEY, name VARCHAR(100), val INT)");
             for (int i = 0; i < 1000; i++) {
                 stmt.execute("INSERT INTO test_mixed VALUES (" + i + ", 'name" + i + "', " + i + ")");

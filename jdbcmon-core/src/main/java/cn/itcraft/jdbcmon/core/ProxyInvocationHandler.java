@@ -7,7 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -87,7 +89,6 @@ public final class ProxyInvocationHandler implements java.lang.reflect.Invocatio
 
             return Connection.class.isAssignableFrom(declaringClass) ||
                    Statement.class.isAssignableFrom(declaringClass) ||
-                   ResultSet.class.isAssignableFrom(declaringClass) ||
                    PreparedStatement.class.isAssignableFrom(declaringClass);
         }
         return false;
@@ -164,10 +165,6 @@ public final class ProxyInvocationHandler implements java.lang.reflect.Invocatio
 
         Class<?> returnType = method.getReturnType();
 
-        if (ResultSet.class.isAssignableFrom(returnType)) {
-            return wrapResultSet((ResultSet) result);
-        }
-
         if (Statement.class.isAssignableFrom(returnType) && !(result instanceof PreparedStatement)) {
             return wrapStatement((Statement) result);
         }
@@ -177,14 +174,6 @@ public final class ProxyInvocationHandler implements java.lang.reflect.Invocatio
         }
 
         return result;
-    }
-
-    private ResultSet wrapResultSet(ResultSet resultSet) {
-        return (ResultSet) java.lang.reflect.Proxy.newProxyInstance(
-            resultSet.getClass().getClassLoader(),
-            new Class[]{ResultSet.class},
-            new ResultSetProxyHandler(resultSet, sqlMonitor, config, proxyId)
-        );
     }
 
     private Statement wrapStatement(Statement statement) {

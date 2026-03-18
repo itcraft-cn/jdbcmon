@@ -98,12 +98,20 @@ public class BatchBenchmark {
     private void initSchema(DataSource ds) throws Exception {
         try (Connection conn = ds.getConnection();
              Statement stmt = conn.createStatement()) {
+            stmt.execute("DROP TABLE IF EXISTS test_batch");
             stmt.execute("CREATE TABLE test_batch (id INT PRIMARY KEY, name VARCHAR(100), val INT)");
+        }
+    }
+
+    private void clearTable(Connection conn) throws Exception {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("DELETE FROM test_batch");
         }
     }
 
     @Benchmark
     public void directBatchInsert(Blackhole bh) throws Exception {
+        clearTable(directConnection);
         for (int i = 0; i < batchSize; i++) {
             directInsertPS.setInt(1, i);
             directInsertPS.setString(2, "name" + i);
@@ -111,11 +119,13 @@ public class BatchBenchmark {
             directInsertPS.addBatch();
         }
         int[] results = directInsertPS.executeBatch();
+        directConnection.commit();
         bh.consume(results);
     }
 
     @Benchmark
     public void proxiedBatchInsert(Blackhole bh) throws Exception {
+        clearTable(proxiedConnection);
         for (int i = 0; i < batchSize; i++) {
             proxiedInsertPS.setInt(1, i);
             proxiedInsertPS.setString(2, "name" + i);
@@ -123,11 +133,13 @@ public class BatchBenchmark {
             proxiedInsertPS.addBatch();
         }
         int[] results = proxiedInsertPS.executeBatch();
+        proxiedConnection.commit();
         bh.consume(results);
     }
 
     @Benchmark
     public void directBatchInsertWithCommit(Blackhole bh) throws Exception {
+        clearTable(directConnection);
         for (int i = 0; i < batchSize; i++) {
             directInsertPS.setInt(1, i);
             directInsertPS.setString(2, "name" + i);
@@ -141,6 +153,7 @@ public class BatchBenchmark {
 
     @Benchmark
     public void proxiedBatchInsertWithCommit(Blackhole bh) throws Exception {
+        clearTable(proxiedConnection);
         for (int i = 0; i < batchSize; i++) {
             proxiedInsertPS.setInt(1, i);
             proxiedInsertPS.setString(2, "name" + i);

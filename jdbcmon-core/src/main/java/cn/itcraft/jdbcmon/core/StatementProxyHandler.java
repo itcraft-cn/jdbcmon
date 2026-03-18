@@ -5,8 +5,6 @@ import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,11 +56,7 @@ public final class StatementProxyHandler implements InvocationHandler {
         }
 
         if (methodName.equals("getResultSet")) {
-            Object result = method.invoke(target, args);
-            if (result instanceof ResultSet) {
-                return wrapResultSet((ResultSet) result);
-            }
-            return result;
+            return method.invoke(target, args);
         }
 
         return method.invoke(target, args);
@@ -165,17 +159,6 @@ public final class StatementProxyHandler implements InvocationHandler {
     }
 
     private Object wrapResultIfNeeded(Object result, Method method) {
-        if (result instanceof ResultSet) {
-            return wrapResultSet((ResultSet) result);
-        }
         return result;
-    }
-
-    private ResultSet wrapResultSet(ResultSet resultSet) {
-        return (ResultSet) java.lang.reflect.Proxy.newProxyInstance(
-            resultSet.getClass().getClassLoader(),
-            new Class[]{ResultSet.class},
-            new ResultSetProxyHandler(resultSet, sqlMonitor, config, parentProxyId)
-        );
     }
 }
