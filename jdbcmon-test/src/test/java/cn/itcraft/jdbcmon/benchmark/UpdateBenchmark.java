@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
-@Warmup(iterations = 10, time = 100, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 5, time = 100, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 10, time = 50, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 5, time = 20, timeUnit = TimeUnit.MILLISECONDS)
 @Fork(1)
 @State(Scope.Benchmark)
 public class UpdateBenchmark {
@@ -118,6 +118,7 @@ public class UpdateBenchmark {
     private void initTestData(DataSource ds) throws Exception {
         try (Connection conn = ds.getConnection();
              Statement stmt = conn.createStatement()) {
+            stmt.execute("DROP TABLE IF EXISTS test_update");
             stmt.execute("CREATE TABLE test_update (id INT PRIMARY KEY, name VARCHAR(100), val INT)");
             for (int i = 0; i < 1000; i++) {
                 stmt.execute("INSERT INTO test_update VALUES (" + i + ", 'name" + i + "', " + i + ")");
@@ -128,26 +129,6 @@ public class UpdateBenchmark {
     @Benchmark
     public void directInsert(Blackhole bh) throws Exception {
         int id = idCounter.incrementAndGet();
-        try (Statement stmt = directConnection.createStatement()) {
-            int rows = stmt.executeUpdate(
-                    "INSERT INTO test_update (id, name, val) VALUES (" + id + ", 'test" + id + "', " + id + ")");
-            bh.consume(rows);
-        }
-    }
-
-    @Benchmark
-    public void proxiedInsert(Blackhole bh) throws Exception {
-        int id = idCounter.incrementAndGet();
-        try (Statement stmt = proxiedConnection.createStatement()) {
-            int rows = stmt.executeUpdate(
-                    "INSERT INTO test_update (id, name, val) VALUES (" + id + ", 'test" + id + "', " + id + ")");
-            bh.consume(rows);
-        }
-    }
-
-    @Benchmark
-    public void directPreparedInsert(Blackhole bh) throws Exception {
-        int id = idCounter.incrementAndGet();
         directInsertPS.setInt(1, id);
         directInsertPS.setString(2, "test" + id);
         directInsertPS.setInt(3, id);
@@ -156,7 +137,7 @@ public class UpdateBenchmark {
     }
 
     @Benchmark
-    public void proxiedPreparedInsert(Blackhole bh) throws Exception {
+    public void proxiedInsert(Blackhole bh) throws Exception {
         int id = idCounter.incrementAndGet();
         proxiedInsertPS.setInt(1, id);
         proxiedInsertPS.setString(2, "test" + id);
@@ -167,24 +148,6 @@ public class UpdateBenchmark {
 
     @Benchmark
     public void directUpdate(Blackhole bh) throws Exception {
-        int id = idCounter.get() % 1000;
-        try (Statement stmt = directConnection.createStatement()) {
-            int rows = stmt.executeUpdate("UPDATE test_update SET val = val + 1 WHERE id = " + id);
-            bh.consume(rows);
-        }
-    }
-
-    @Benchmark
-    public void proxiedUpdate(Blackhole bh) throws Exception {
-        int id = idCounter.get() % 1000;
-        try (Statement stmt = proxiedConnection.createStatement()) {
-            int rows = stmt.executeUpdate("UPDATE test_update SET val = val + 1 WHERE id = " + id);
-            bh.consume(rows);
-        }
-    }
-
-    @Benchmark
-    public void directPreparedUpdate(Blackhole bh) throws Exception {
         int id = idCounter.incrementAndGet() % 1000;
         directUpdatePS.setInt(1, id);
         directUpdatePS.setInt(2, id);
@@ -193,7 +156,7 @@ public class UpdateBenchmark {
     }
 
     @Benchmark
-    public void proxiedPreparedUpdate(Blackhole bh) throws Exception {
+    public void proxiedUpdate(Blackhole bh) throws Exception {
         int id = idCounter.incrementAndGet() % 1000;
         proxiedUpdatePS.setInt(1, id);
         proxiedUpdatePS.setInt(2, id);
