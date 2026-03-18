@@ -8,7 +8,38 @@ jdbcmon 是一个高性能、可扩展的轻量级 JDBC 监控代理框架。
 - 零侵入：无需修改业务代码
 - 高性能：代理链开销 < 5%
 - 可扩展：支持自定义监控指标
-- JDK兼容：8-17 无缝迁移
+- JDK兼容：8/17/23 多版本支持
+
+## 模块结构
+
+```
+jdbcmon/
+├── jdbcmon-core/           # 核心模块
+│   ├── src/main/java/      # JDK 8 基础代码
+│   ├── src/main/java17/    # JDK 17+ 优化
+│   └── src/main/java23/    # JDK 23+ 优化
+├── jdbcmon-spring/         # Spring Boot 集成
+└── jdbcmon-test/           # 集成测试
+```
+
+## 多版本构建
+
+```bash
+# 构建 JDK 8 版本
+export JAVA_HOME=/home/helly/lang/jdk8
+mvn clean install -Pjdk8
+
+# 构建 JDK 17 版本
+export JAVA_HOME=/home/helly/lang/jdk17
+mvn clean install -Pjdk17
+
+# 构建 JDK 23 版本
+export JAVA_HOME=/home/helly/lang/jdk23
+mvn clean install -Pjdk23
+
+# 或使用构建脚本
+./build.sh
+```
 
 ## 角色定位
 
@@ -177,25 +208,48 @@ interface ResultSetHandler<T> {
 ## 项目结构
 
 ```
-src/main/java/cn/itcraft/jdbcmon/
-├── core/                    # 核心代理
+jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
+├── spi/                      # SPI 接口层
+│   ├── MethodInvoker.java
+│   ├── AsyncExecutor.java
+│   └── VarAccessor.java
+├── internal/                 # 内部实现
+│   ├── Platform.java
+│   ├── MethodHandleInvoker.java
+│   └── PlatformThreadExecutor.java
+├── core/                     # 核心代理
 │   ├── JdbcProxy.java
 │   ├── ProxyInvocationHandler.java
+│   ├── ConnectionProxyHandler.java
+│   ├── StatementProxyHandler.java
+│   ├── ResultSetProxyHandler.java
 │   └── SqlExecutionContext.java
-├── datasource/              # 数据源代理
+├── datasource/               # 数据源代理
 │   ├── ProxyDataSource.java
-│   └── DataSourceBuilder.java
-├── monitor/                 # 监控核心
+│   └── ProxyDataSourceBuilder.java
+├── monitor/                  # 监控核心
 │   ├── SqlMonitor.java
 │   ├── SqlMetrics.java
-│   └── SlowSqlDetector.java
-├── listener/                # 监听器
+│   ├── SqlStatistics.java
+│   └── AdaptiveThreshold.java
+├── listener/                 # 监听器
 │   ├── SqlExecutionListener.java
-│   └── CompositeSqlListener.java
-├── config/                  # 配置
+│   ├── CompositeSqlListener.java
+│   └── LoggingSqlListener.java
+├── config/                   # 配置
 │   └── ProxyConfig.java
-└── consts/                  # 常量
+└── consts/                   # 常量
     └── JdbcConsts.java
+
+jdbcmon-core/src/main/java17/  # JDK 17+ 专用
+└── internal/
+    ├── VarHandleAccessor.java
+    └── RecordMetrics.java
+
+jdbcmon-core/src/main/java23/  # JDK 23+ 专用
+└── internal/
+    ├── VirtualThreadExecutor.java
+    └── ScopedValueContext.java
 ```
 
 ## Git 提交规范
