@@ -12,11 +12,11 @@ echo "Running benchmarks with JDK 17"
 echo "========================================"
 
 echo ""
-echo "[1/2] Compiling..."
-$MVN clean compile test-compile -DskipTests -q 2>/dev/null
+echo "[1/2] Building all modules..."
+$MVN clean package -Pjdk17 -pl jdbcmon-core,jdbcmon-test -DskipTests -q 2>/dev/null
 
 if [ $? -ne 0 ]; then
-    echo "ERROR: Compilation failed"
+    echo "ERROR: Build failed"
     exit 1
 fi
 
