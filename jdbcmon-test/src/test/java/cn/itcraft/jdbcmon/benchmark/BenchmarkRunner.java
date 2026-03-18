@@ -8,13 +8,13 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 public class BenchmarkRunner {
 
     public static void main(String[] args) throws RunnerException {
-        String include = args.length > 0 ? args[0] : "QueryBenchmark";
-        
+        String include = args.length > 0 ? args[0] : "Benchmark";
+
         Options opt = new OptionsBuilder()
                 .include(".*" + include + ".*")
                 .warmupIterations(5)
                 .measurementIterations(3)
-                .forks(0)
+                .forks(3)
                 .threads(1)
                 .shouldFailOnError(true)
                 .shouldDoGC(true)

@@ -1,5 +1,6 @@
 package cn.itcraft.jdbcmon.monitor;
 
+import cn.itcraft.jdbcmon.config.MetricsLevel;
 import cn.itcraft.jdbcmon.config.ProxyConfig;
 import cn.itcraft.jdbcmon.core.SqlExecutionContext;
 import cn.itcraft.jdbcmon.listener.CompositeSqlListener;
@@ -9,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,6 +25,8 @@ public final class SqlMonitor {
     private final Map<String, SqlMetrics> metricsMap = new ConcurrentHashMap<>();
     private final AsyncExecutor asyncExecutor;
 
+    private volatile MetricsLevel currentLevel;
+
     private final LongAdder totalQueries = new LongAdder();
     private final LongAdder totalUpdates = new LongAdder();
     private final LongAdder totalBatchOps = new LongAdder();
@@ -35,6 +37,7 @@ public final class SqlMonitor {
 
     public SqlMonitor(ProxyConfig config) {
         this.config = config;
+        this.currentLevel = config.getMetricsLevel();
         this.adaptiveThreshold = config.isUseAdaptiveThreshold() 
             ? new AdaptiveThreshold(config) 
             : null;
@@ -49,15 +52,61 @@ public final class SqlMonitor {
         }
     }
 
-    // ========== 简化 API（套壳模式使用）==========
+    // ========== 运行时配置 ==========
+
+    public void setMetricsLevel(MetricsLevel level) {
+        this.currentLevel = level;
+    }
+
+    public MetricsLevel getMetricsLevel() {
+        return currentLevel;
+    }
+
+    // ========== Metrics 缓存（供 PreparedStatement 使用）==========
+
+    public SqlMetrics getOrCreateMetrics(String sql) {
+        return metricsMap.computeIfAbsent(sql, k -> new SqlMetrics(sql));
+    }
+
+    // ========== 快速 API（使用缓存的 Metrics）==========
+
+    public void recordQueryFast(SqlMetrics metrics, long elapsedNanos) {
+        totalQueries.increment();
+        metrics.recordSuccess(elapsedNanos, null, currentLevel);
+        checkSlowQuerySimple(metrics.getSqlKey(), elapsedNanos);
+    }
+
+    public void recordUpdateFast(SqlMetrics metrics, long elapsedNanos, int rows) {
+        totalUpdates.increment();
+        metrics.recordSuccess(elapsedNanos, rows, currentLevel);
+        checkSlowQuerySimple(metrics.getSqlKey(), elapsedNanos);
+    }
+
+    public void recordBatchFast(SqlMetrics metrics, long elapsedNanos, int[] rows) {
+        totalBatchOps.increment();
+        metrics.recordSuccess(elapsedNanos, rows, currentLevel);
+        checkSlowQuerySimple(metrics.getSqlKey(), elapsedNanos);
+    }
+
+    public void recordErrorFast(SqlMetrics metrics, long elapsedNanos, Throwable t) {
+        totalErrors.increment();
+        metrics.recordFailure(elapsedNanos, t, currentLevel);
+    }
+
+    public void recordTransactionFast(SqlMetrics metrics, long elapsedNanos) {
+        totalUpdates.increment();
+        metrics.recordSuccess(elapsedNanos, null, currentLevel);
+    }
+
+    // ========== 简化 API（套壳模式使用，动态 SQL）==========
 
     public void recordQuery(String sql, long elapsedNanos) {
         if (sql == null || sql.isEmpty()) {
             return;
         }
         totalQueries.increment();
-        SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics());
-        metrics.recordSuccess(elapsedNanos, null);
+        SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics(sql));
+        metrics.recordSuccess(elapsedNanos, null, currentLevel);
         checkSlowQuerySimple(sql, elapsedNanos);
     }
 
@@ -66,35 +115,31 @@ public final class SqlMonitor {
             return;
         }
         totalUpdates.increment();
-        SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics());
-        metrics.recordSuccess(elapsedNanos, rows);
+        SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics(sql));
+        metrics.recordSuccess(elapsedNanos, rows, currentLevel);
         checkSlowQuerySimple(sql, elapsedNanos);
     }
 
     public void recordBatch(String sql, long elapsedNanos, int[] rows) {
-        if (sql == null || sql.isEmpty()) {
-            sql = "BATCH_EXECUTION";
-        }
+        String key = (sql == null || sql.isEmpty()) ? "BATCH_EXECUTION" : sql;
         totalBatchOps.increment();
-        SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics());
-        metrics.recordSuccess(elapsedNanos, rows);
-        checkSlowQuerySimple(sql, elapsedNanos);
+        SqlMetrics metrics = metricsMap.computeIfAbsent(key, k -> new SqlMetrics(key));
+        metrics.recordSuccess(elapsedNanos, rows, currentLevel);
+        checkSlowQuerySimple(key, elapsedNanos);
     }
 
     public void recordTransaction(String operation, long elapsedNanos) {
         totalUpdates.increment();
         String sql = "TRANSACTION_" + operation.toUpperCase();
-        SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics());
-        metrics.recordSuccess(elapsedNanos, null);
+        SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics(sql));
+        metrics.recordSuccess(elapsedNanos, null, currentLevel);
     }
 
     public void recordError(String sql, long elapsedNanos, Throwable t) {
         totalErrors.increment();
-        if (sql == null || sql.isEmpty()) {
-            sql = "UNKNOWN_SQL";
-        }
-        SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics());
-        metrics.recordFailure(elapsedNanos, t);
+        String key = (sql == null || sql.isEmpty()) ? "UNKNOWN_SQL" : sql;
+        SqlMetrics metrics = metricsMap.computeIfAbsent(key, k -> new SqlMetrics(key));
+        metrics.recordFailure(elapsedNanos, t, currentLevel);
     }
 
     private void checkSlowQuerySimple(String sql, long elapsedNanos) {

@@ -1,5 +1,6 @@
 package cn.itcraft.jdbcmon.proxy.wrapper;
 
+import cn.itcraft.jdbcmon.monitor.SqlMetrics;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 
 import java.io.InputStream;
@@ -32,11 +33,13 @@ public final class MonitoredCallableStatement implements CallableStatement {
     private final CallableStatement delegate;
     private final SqlMonitor monitor;
     private final String sql;
+    private final SqlMetrics cachedMetrics;
 
     public MonitoredCallableStatement(CallableStatement delegate, SqlMonitor monitor, String sql) {
         this.delegate = delegate;
         this.monitor = monitor;
         this.sql = sql;
+        this.cachedMetrics = monitor.getOrCreateMetrics(sql);
     }
 
     // ========== 监控方法 ==========
@@ -46,10 +49,10 @@ public final class MonitoredCallableStatement implements CallableStatement {
         long start = System.nanoTime();
         try {
             boolean result = delegate.execute();
-            monitor.recordQuery(sql, System.nanoTime() - start);
+            monitor.recordQueryFast(cachedMetrics, System.nanoTime() - start);
             return result;
         } catch (java.sql.SQLException e) {
-            monitor.recordError(sql, System.nanoTime() - start, e);
+            monitor.recordErrorFast(cachedMetrics, System.nanoTime() - start, e);
             throw e;
         }
     }
@@ -59,10 +62,10 @@ public final class MonitoredCallableStatement implements CallableStatement {
         long start = System.nanoTime();
         try {
             ResultSet rs = delegate.executeQuery();
-            monitor.recordQuery(sql, System.nanoTime() - start);
+            monitor.recordQueryFast(cachedMetrics, System.nanoTime() - start);
             return rs;
         } catch (java.sql.SQLException e) {
-            monitor.recordError(sql, System.nanoTime() - start, e);
+            monitor.recordErrorFast(cachedMetrics, System.nanoTime() - start, e);
             throw e;
         }
     }
@@ -72,10 +75,10 @@ public final class MonitoredCallableStatement implements CallableStatement {
         long start = System.nanoTime();
         try {
             int rows = delegate.executeUpdate();
-            monitor.recordUpdate(sql, System.nanoTime() - start, rows);
+            monitor.recordUpdateFast(cachedMetrics, System.nanoTime() - start, rows);
             return rows;
         } catch (java.sql.SQLException e) {
-            monitor.recordError(sql, System.nanoTime() - start, e);
+            monitor.recordErrorFast(cachedMetrics, System.nanoTime() - start, e);
             throw e;
         }
     }
@@ -85,10 +88,10 @@ public final class MonitoredCallableStatement implements CallableStatement {
         long start = System.nanoTime();
         try {
             int[] rows = delegate.executeBatch();
-            monitor.recordBatch(sql, System.nanoTime() - start, rows);
+            monitor.recordBatchFast(cachedMetrics, System.nanoTime() - start, rows);
             return rows;
         } catch (java.sql.SQLException e) {
-            monitor.recordError(sql, System.nanoTime() - start, e);
+            monitor.recordErrorFast(cachedMetrics, System.nanoTime() - start, e);
             throw e;
         }
     }
@@ -647,10 +650,10 @@ public final class MonitoredCallableStatement implements CallableStatement {
         long start = System.nanoTime();
         try {
             long rows = delegate.executeLargeUpdate();
-            monitor.recordUpdate(sql, System.nanoTime() - start, (int) Math.min(rows, Integer.MAX_VALUE));
+            monitor.recordUpdateFast(cachedMetrics, System.nanoTime() - start, (int) Math.min(rows, Integer.MAX_VALUE));
             return rows;
         } catch (java.sql.SQLException e) {
-            monitor.recordError(sql, System.nanoTime() - start, e);
+            monitor.recordErrorFast(cachedMetrics, System.nanoTime() - start, e);
             throw e;
         }
     }

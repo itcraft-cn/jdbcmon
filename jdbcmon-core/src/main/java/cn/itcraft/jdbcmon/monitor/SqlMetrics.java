@@ -1,18 +1,25 @@
 package cn.itcraft.jdbcmon.monitor;
 
+import cn.itcraft.jdbcmon.config.MetricsLevel;
+
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 public final class SqlMetrics {
 
+    private final String sqlKey;
+
     private final LongAdder executionCount = new LongAdder();
-    private final LongAdder successCount = new LongAdder();
     private final LongAdder failureCount = new LongAdder();
     private final LongAdder totalTimeNanos = new LongAdder();
 
-    private volatile long minTimeNanos = Long.MAX_VALUE;
-    private volatile long maxTimeNanos = Long.MIN_VALUE;
+    private final AtomicLong minTimeNanos = new AtomicLong(Long.MAX_VALUE);
+    private final AtomicLong maxTimeNanos = new AtomicLong(Long.MIN_VALUE);
+    private final LongAdder rowsAffected = new LongAdder();
 
+    private final LongAdder successCount = new LongAdder();
     private final LongAdder[] timeHistogram;
+
     private static final long[] TIME_BOUNDARIES = {
         1_000_000L,
         10_000_000L,
@@ -23,77 +30,71 @@ public final class SqlMetrics {
         5_000_000_000L
     };
 
-    private final LongAdder rowsAffected = new LongAdder();
-
     public SqlMetrics() {
-        timeHistogram = new LongAdder[TIME_BOUNDARIES.length + 1];
+        this(null);
+    }
+
+    public SqlMetrics(String sqlKey) {
+        this.sqlKey = sqlKey;
+        this.timeHistogram = new LongAdder[TIME_BOUNDARIES.length + 1];
         for (int i = 0; i < timeHistogram.length; i++) {
             timeHistogram[i] = new LongAdder();
         }
     }
 
-    public void recordSuccess(long elapsedNanos, Object result) {
+    public void recordSuccess(long elapsedNanos, Object result, MetricsLevel level) {
         executionCount.increment();
-        successCount.increment();
         totalTimeNanos.add(elapsedNanos);
 
-        updateMinTime(elapsedNanos);
-        updateMaxTime(elapsedNanos);
-        updateHistogram(elapsedNanos);
+        if (level == MetricsLevel.FULL) {
+            successCount.increment();
+            updateHistogram(elapsedNanos);
+        }
 
-        if (result instanceof Integer) {
-            rowsAffected.add((Integer) result);
-        } else if (result instanceof int[]) {
-            for (int count : (int[]) result) {
-                rowsAffected.add(count);
+        if (level.ordinal() >= MetricsLevel.EXTENDED.ordinal()) {
+            updateMinTime(elapsedNanos);
+            updateMaxTime(elapsedNanos);
+            if (result instanceof Integer) {
+                rowsAffected.add((Integer) result);
+            } else if (result instanceof int[]) {
+                for (int count : (int[]) result) {
+                    rowsAffected.add(count);
+                }
             }
         }
     }
 
-    public void recordFailure(long elapsedNanos, Throwable throwable) {
+    public void recordFailure(long elapsedNanos, Throwable throwable, MetricsLevel level) {
         executionCount.increment();
         failureCount.increment();
         totalTimeNanos.add(elapsedNanos);
 
-        updateMinTime(elapsedNanos);
-        updateMaxTime(elapsedNanos);
-        updateHistogram(elapsedNanos);
+        if (level == MetricsLevel.FULL) {
+            updateHistogram(elapsedNanos);
+        }
+
+        if (level.ordinal() >= MetricsLevel.EXTENDED.ordinal()) {
+            updateMinTime(elapsedNanos);
+            updateMaxTime(elapsedNanos);
+        }
     }
 
     private void updateMinTime(long elapsedNanos) {
-        long current = minTimeNanos;
-        while (elapsedNanos < current) {
-            if (compareAndSetMin(current, elapsedNanos)) {
+        long current;
+        while ((current = minTimeNanos.get()) > elapsedNanos) {
+            if (minTimeNanos.compareAndSet(current, elapsedNanos)) {
                 break;
             }
-            current = minTimeNanos;
         }
     }
 
     private void updateMaxTime(long elapsedNanos) {
-        long current = maxTimeNanos;
-        while (elapsedNanos > current) {
-            if (compareAndSetMax(current, elapsedNanos)) {
+        long current;
+        while ((current = maxTimeNanos.get()) < elapsedNanos) {
+            if (maxTimeNanos.compareAndSet(current, elapsedNanos)) {
                 break;
             }
-            current = maxTimeNanos;
         }
-    }
-
-    private synchronized boolean compareAndSetMin(long expect, long update) {
-        if (minTimeNanos == expect) {
-            minTimeNanos = update;
-            return true;
-        }
-        return false;
-    }
-
-    private synchronized boolean compareAndSetMax(long expect, long update) {
-        if (maxTimeNanos == expect) {
-            maxTimeNanos = update;
-            return true;
-        }
-        return false;
     }
 
     private void updateHistogram(long elapsedNanos) {
@@ -102,6 +103,10 @@ public final class SqlMetrics {
             index++;
         }
         timeHistogram[index].increment();
+    }
+
+    public String getSqlKey() {
+        return sqlKey;
     }
 
     public long getExecutionCount() {
@@ -121,12 +126,12 @@ public final class SqlMetrics {
     }
 
     public long getMinTimeNanos() {
-        long min = minTimeNanos;
+        long min = minTimeNanos.get();
         return min == Long.MAX_VALUE ? 0 : min;
     }
 
     public long getMaxTimeNanos() {
-        long max = maxTimeNanos;
+        long max = maxTimeNanos.get();
         return max == Long.MIN_VALUE ? 0 : max;
     }
 
@@ -149,5 +154,15 @@ public final class SqlMetrics {
 
     public static long[] getTimeBoundaries() {
         return TIME_BOUNDARIES.clone();
+    }
+
+    // ========== 兼容旧 API（反射模式使用）==========
+
+    public void recordSuccess(long elapsedNanos, Object result) {
+        recordSuccess(elapsedNanos, result, MetricsLevel.FULL);
+    }
+
+    public void recordFailure(long elapsedNanos, Throwable throwable) {
+        recordFailure(elapsedNanos, throwable, MetricsLevel.FULL);
     }
 }

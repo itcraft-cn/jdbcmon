@@ -9,6 +9,7 @@ import static cn.itcraft.jdbcmon.consts.JdbcConsts.*;
 public final class ProxyConfig {
 
     private ProxyMode proxyMode = ProxyMode.WRAPPER;
+    private MetricsLevel metricsLevel = MetricsLevel.BASIC;
     
     private boolean enableMonitoring = true;
     private long slowQueryThresholdMs = DEFAULT_SLOW_QUERY_THRESHOLD_MS;
@@ -43,6 +44,10 @@ public final class ProxyConfig {
 
     public ProxyMode getProxyMode() {
         return proxyMode;
+    }
+
+    public MetricsLevel getMetricsLevel() {
+        return metricsLevel;
     }
 
     public boolean isEnableMonitoring() {
@@ -159,6 +164,11 @@ public final class ProxyConfig {
 
         public Builder proxyMode(ProxyMode mode) {
             config.proxyMode = mode;
+            return this;
+        }
+
+        public Builder metricsLevel(MetricsLevel level) {
+            config.metricsLevel = level;
             return this;
         }
 
