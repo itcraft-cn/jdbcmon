@@ -87,7 +87,7 @@
             <properties>
                 <maven.compiler.source>1.8</maven.compiler.source>
                 <maven.compiler.target>1.8</maven.compiler.target>
-                <jdk.classifier>jdk8</jdk.classifier>
+                <jdk.classifier></jdk.classifier>
             </properties>
         </profile>
 
