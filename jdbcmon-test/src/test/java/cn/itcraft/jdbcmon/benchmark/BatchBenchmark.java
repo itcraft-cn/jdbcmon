@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 public class BatchBenchmark {
 
-    @Param({"10", "100", "1000"})
+    @Param({"1000"})
     public int batchSize;
 
     private DataSource directDataSource;
