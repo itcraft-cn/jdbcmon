@@ -1,9 +1,7 @@
 package cn.itcraft.jdbcmon.datasource;
 
 import cn.itcraft.jdbcmon.config.ProxyConfig;
-import cn.itcraft.jdbcmon.config.ProxyMode;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
-import cn.itcraft.jdbcmon.proxy.reflection.ReflectionProxyFactory;
 import cn.itcraft.jdbcmon.proxy.wrapper.WrapperProxyFactory;
 import cn.itcraft.jdbcmon.spi.JdbcProxyFactory;
 
@@ -28,17 +26,7 @@ public final class ProxyDataSource implements DataSource {
         this.target = Objects.requireNonNull(target, "target cannot be null");
         this.config = config != null ? config : new ProxyConfig.Builder().build();
         this.sqlMonitor = new SqlMonitor(this.config);
-        this.proxyFactory = createProxyFactory(this.config.getProxyMode());
-    }
-
-    private JdbcProxyFactory createProxyFactory(ProxyMode mode) {
-        switch (mode) {
-            case WRAPPER:
-                return new WrapperProxyFactory();
-            case REFLECTION:
-            default:
-                return new ReflectionProxyFactory();
-        }
+        this.proxyFactory = new WrapperProxyFactory();
     }
 
     @Override

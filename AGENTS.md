@@ -85,16 +85,10 @@ java -cp "target/test-classes:../jdbcmon-core/target/jdbcmon-core-1.0.0-SNAPSHOT
 
 ```java
 ProxyConfig config = new ProxyConfig.Builder()
-    .proxyMode(ProxyMode.WRAPPER)      // WRAPPER(默认) 或 REFLECTION
     .metricsLevel(MetricsLevel.BASIC)  // BASIC/EXTENDED/FULL
     .slowQueryThresholdMs(1000)
     .build();
 ```
-
-| 模式 | Query 开销 | 特点 |
-|------|------------|------|
-| WRAPPER | ~1.5% | 零反射，JIT 可内联 |
-| REFLECTION | ~16% | 动态代理，灵活 |
 
 ## 编码规范
 
@@ -106,8 +100,7 @@ ProxyConfig config = new ProxyConfig.Builder()
 jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
 ├── spi/                      # SPI 接口层
 ├── proxy/                    # 代理实现
-│   ├── wrapper/              # 套壳模式（高性能）
-│   └── reflection/           # 反射模式
+│   └── wrapper/              # 套壳模式
 ├── monitor/                  # 监控核心
 ├── config/                   # 配置
 └── consts/                   # 常量
@@ -115,7 +108,7 @@ jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
 
 ## 性能要点
 
-- WRAPPER 模式：SqlMetrics 缓存在 PreparedStatement 中，避免 Map 查找
+- SqlMetrics 缓存在 PreparedStatement 中，避免 Map 查找
 - MetricsRecorder 策略模式：消除运行时级别检查
 - 预计算阈值：slowQueryThresholdNanos 避免每次 TimeUnit 转换
 - LongAdder 替代 AtomicLong 实现高并发计数

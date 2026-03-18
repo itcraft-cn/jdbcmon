@@ -8,7 +8,6 @@ import static cn.itcraft.jdbcmon.consts.JdbcConsts.*;
 
 public final class ProxyConfig {
 
-    private ProxyMode proxyMode = ProxyMode.WRAPPER;
     private MetricsLevel metricsLevel = MetricsLevel.BASIC;
     
     private boolean enableMonitoring = true;
@@ -40,10 +39,6 @@ public final class ProxyConfig {
     private int adaptiveWindowSizeSeconds = ADAPTIVE_WINDOW_SIZE_SECONDS;
 
     private ProxyConfig() {
-    }
-
-    public ProxyMode getProxyMode() {
-        return proxyMode;
     }
 
     public MetricsLevel getMetricsLevel() {
@@ -161,11 +156,6 @@ public final class ProxyConfig {
 
     public static class Builder {
         private final ProxyConfig config = new ProxyConfig();
-
-        public Builder proxyMode(ProxyMode mode) {
-            config.proxyMode = mode;
-            return this;
-        }
 
         public Builder metricsLevel(MetricsLevel level) {
             config.metricsLevel = level;
