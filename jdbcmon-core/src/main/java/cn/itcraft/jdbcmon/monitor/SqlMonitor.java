@@ -26,6 +26,8 @@ public final class SqlMonitor {
     private final AsyncExecutor asyncExecutor;
 
     private volatile MetricsLevel currentLevel;
+    private volatile MetricsRecorder recorder;
+    private volatile long slowQueryThresholdNanos;
 
     private final LongAdder totalQueries = new LongAdder();
     private final LongAdder totalUpdates = new LongAdder();
@@ -34,10 +36,14 @@ public final class SqlMonitor {
     private final LongAdder totalSlowQueries = new LongAdder();
 
     private final AdaptiveThreshold adaptiveThreshold;
+    private final boolean logSlowQueries;
 
     public SqlMonitor(ProxyConfig config) {
         this.config = config;
         this.currentLevel = config.getMetricsLevel();
+        this.recorder = createRecorder(currentLevel);
+        this.slowQueryThresholdNanos = TimeUnit.MILLISECONDS.toNanos(config.getSlowQueryThresholdMs());
+        this.logSlowQueries = config.isLogSlowQueries();
         this.adaptiveThreshold = config.isUseAdaptiveThreshold() 
             ? new AdaptiveThreshold(config) 
             : null;
@@ -52,14 +58,31 @@ public final class SqlMonitor {
         }
     }
 
+    private MetricsRecorder createRecorder(MetricsLevel level) {
+        switch (level) {
+            case BASIC:
+                return BasicMetricsRecorder.INSTANCE;
+            case EXTENDED:
+                return ExtendedMetricsRecorder.INSTANCE;
+            case FULL:
+            default:
+                return FullMetricsRecorder.INSTANCE;
+        }
+    }
+
     // ========== 运行时配置 ==========
 
     public void setMetricsLevel(MetricsLevel level) {
         this.currentLevel = level;
+        this.recorder = createRecorder(level);
     }
 
     public MetricsLevel getMetricsLevel() {
         return currentLevel;
+    }
+
+    public void setSlowQueryThresholdMs(long thresholdMs) {
+        this.slowQueryThresholdNanos = TimeUnit.MILLISECONDS.toNanos(thresholdMs);
     }
 
     // ========== Metrics 缓存（供 PreparedStatement 使用）==========
@@ -72,30 +95,41 @@ public final class SqlMonitor {
 
     public void recordQueryFast(SqlMetrics metrics, long elapsedNanos) {
         totalQueries.increment();
-        metrics.recordSuccess(elapsedNanos, null, currentLevel);
-        checkSlowQuerySimple(metrics.getSqlKey(), elapsedNanos);
+        recorder.recordSuccess(metrics, elapsedNanos, null);
+        checkSlowQueryFast(metrics.getSqlKey(), elapsedNanos);
     }
 
     public void recordUpdateFast(SqlMetrics metrics, long elapsedNanos, int rows) {
         totalUpdates.increment();
-        metrics.recordSuccess(elapsedNanos, rows, currentLevel);
-        checkSlowQuerySimple(metrics.getSqlKey(), elapsedNanos);
+        recorder.recordSuccess(metrics, elapsedNanos, rows);
+        checkSlowQueryFast(metrics.getSqlKey(), elapsedNanos);
     }
 
     public void recordBatchFast(SqlMetrics metrics, long elapsedNanos, int[] rows) {
         totalBatchOps.increment();
-        metrics.recordSuccess(elapsedNanos, rows, currentLevel);
-        checkSlowQuerySimple(metrics.getSqlKey(), elapsedNanos);
+        recorder.recordSuccess(metrics, elapsedNanos, rows);
+        checkSlowQueryFast(metrics.getSqlKey(), elapsedNanos);
     }
 
     public void recordErrorFast(SqlMetrics metrics, long elapsedNanos, Throwable t) {
         totalErrors.increment();
-        metrics.recordFailure(elapsedNanos, t, currentLevel);
+        recorder.recordFailure(metrics, elapsedNanos, t);
     }
 
     public void recordTransactionFast(SqlMetrics metrics, long elapsedNanos) {
         totalUpdates.increment();
-        metrics.recordSuccess(elapsedNanos, null, currentLevel);
+        recorder.recordSuccess(metrics, elapsedNanos, null);
+    }
+
+    private void checkSlowQueryFast(String sql, long elapsedNanos) {
+        if (elapsedNanos > slowQueryThresholdNanos) {
+            totalSlowQueries.increment();
+            if (logSlowQueries) {
+                long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(elapsedNanos);
+                long thresholdMs = TimeUnit.NANOSECONDS.toMillis(slowQueryThresholdNanos);
+                log.warn("[SLOW_SQL] {}ms (threshold: {}ms) - {}", elapsedMillis, thresholdMs, sql);
+            }
+        }
     }
 
     // ========== 简化 API（套壳模式使用，动态 SQL）==========
@@ -106,8 +140,8 @@ public final class SqlMonitor {
         }
         totalQueries.increment();
         SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics(sql));
-        metrics.recordSuccess(elapsedNanos, null, currentLevel);
-        checkSlowQuerySimple(sql, elapsedNanos);
+        recorder.recordSuccess(metrics, elapsedNanos, null);
+        checkSlowQueryFast(sql, elapsedNanos);
     }
 
     public void recordUpdate(String sql, long elapsedNanos, int rows) {
@@ -116,43 +150,30 @@ public final class SqlMonitor {
         }
         totalUpdates.increment();
         SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics(sql));
-        metrics.recordSuccess(elapsedNanos, rows, currentLevel);
-        checkSlowQuerySimple(sql, elapsedNanos);
+        recorder.recordSuccess(metrics, elapsedNanos, rows);
+        checkSlowQueryFast(sql, elapsedNanos);
     }
 
     public void recordBatch(String sql, long elapsedNanos, int[] rows) {
         String key = (sql == null || sql.isEmpty()) ? "BATCH_EXECUTION" : sql;
         totalBatchOps.increment();
         SqlMetrics metrics = metricsMap.computeIfAbsent(key, k -> new SqlMetrics(key));
-        metrics.recordSuccess(elapsedNanos, rows, currentLevel);
-        checkSlowQuerySimple(key, elapsedNanos);
+        recorder.recordSuccess(metrics, elapsedNanos, rows);
+        checkSlowQueryFast(key, elapsedNanos);
     }
 
     public void recordTransaction(String operation, long elapsedNanos) {
         totalUpdates.increment();
         String sql = "TRANSACTION_" + operation.toUpperCase();
         SqlMetrics metrics = metricsMap.computeIfAbsent(sql, k -> new SqlMetrics(sql));
-        metrics.recordSuccess(elapsedNanos, null, currentLevel);
+        recorder.recordSuccess(metrics, elapsedNanos, null);
     }
 
     public void recordError(String sql, long elapsedNanos, Throwable t) {
         totalErrors.increment();
         String key = (sql == null || sql.isEmpty()) ? "UNKNOWN_SQL" : sql;
         SqlMetrics metrics = metricsMap.computeIfAbsent(key, k -> new SqlMetrics(key));
-        metrics.recordFailure(elapsedNanos, t, currentLevel);
-    }
-
-    private void checkSlowQuerySimple(String sql, long elapsedNanos) {
-        long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(elapsedNanos);
-        long threshold = getSlowQueryThreshold();
-
-        if (elapsedMillis > threshold) {
-            totalSlowQueries.increment();
-            if (config.isLogSlowQueries()) {
-                log.warn("[SLOW_SQL] {}ms (threshold: {}ms) - {}", 
-                    elapsedMillis, threshold, sql);
-            }
-        }
+        recorder.recordFailure(metrics, elapsedNanos, t);
     }
 
     // ========== 原有 API（反射模式使用）==========
@@ -213,7 +234,7 @@ public final class SqlMonitor {
                 context.setStackTrace(Thread.currentThread().getStackTrace());
             }
 
-            if (config.isLogSlowQueries()) {
+            if (logSlowQueries) {
                 log.warn("[SLOW_SQL] {}ms (threshold: {}ms) - {}", 
                     elapsedMillis, threshold, context.getSql());
             }

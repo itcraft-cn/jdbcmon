@@ -42,18 +42,74 @@ public final class SqlMetrics {
         }
     }
 
+    // ========== MetricsRecorder 使用的方法 ==========
+
+    void addExecutionCount() {
+        executionCount.increment();
+    }
+
+    void addFailureCount() {
+        failureCount.increment();
+    }
+
+    void addTotalTime(long nanos) {
+        totalTimeNanos.add(nanos);
+    }
+
+    void addSuccessCount() {
+        successCount.increment();
+    }
+
+    void updateMin(long elapsedNanos) {
+        long current;
+        while ((current = minTimeNanos.get()) > elapsedNanos) {
+            if (minTimeNanos.compareAndSet(current, elapsedNanos)) {
+                break;
+            }
+        }
+    }
+
+    void updateMax(long elapsedNanos) {
+        long current;
+        while ((current = maxTimeNanos.get()) < elapsedNanos) {
+            if (maxTimeNanos.compareAndSet(current, elapsedNanos)) {
+                break;
+            }
+        }
+    }
+
+    void addRows(int rows) {
+        rowsAffected.add(rows);
+    }
+
+    void addRows(int[] rows) {
+        for (int count : rows) {
+            rowsAffected.add(count);
+        }
+    }
+
+    void updateHistogramIndex(long elapsedNanos) {
+        int index = 0;
+        while (index < TIME_BOUNDARIES.length && elapsedNanos > TIME_BOUNDARIES[index]) {
+            index++;
+        }
+        timeHistogram[index].increment();
+    }
+
+    // ========== 兼容旧 API（反射模式使用）==========
+
     public void recordSuccess(long elapsedNanos, Object result, MetricsLevel level) {
         executionCount.increment();
         totalTimeNanos.add(elapsedNanos);
 
         if (level == MetricsLevel.FULL) {
             successCount.increment();
-            updateHistogram(elapsedNanos);
+            updateHistogramIndex(elapsedNanos);
         }
 
         if (level.ordinal() >= MetricsLevel.EXTENDED.ordinal()) {
-            updateMinTime(elapsedNanos);
-            updateMaxTime(elapsedNanos);
+            updateMin(elapsedNanos);
+            updateMax(elapsedNanos);
             if (result instanceof Integer) {
                 rowsAffected.add((Integer) result);
             } else if (result instanceof int[]) {
@@ -70,40 +126,24 @@ public final class SqlMetrics {
         totalTimeNanos.add(elapsedNanos);
 
         if (level == MetricsLevel.FULL) {
-            updateHistogram(elapsedNanos);
+            updateHistogramIndex(elapsedNanos);
         }
 
         if (level.ordinal() >= MetricsLevel.EXTENDED.ordinal()) {
-            updateMinTime(elapsedNanos);
-            updateMaxTime(elapsedNanos);
+            updateMin(elapsedNanos);
+            updateMax(elapsedNanos);
         }
     }
 
-    private void updateMinTime(long elapsedNanos) {
-        long current;
-        while ((current = minTimeNanos.get()) > elapsedNanos) {
-            if (minTimeNanos.compareAndSet(current, elapsedNanos)) {
-                break;
-            }
-        }
+    public void recordSuccess(long elapsedNanos, Object result) {
+        recordSuccess(elapsedNanos, result, MetricsLevel.FULL);
     }
 
-    private void updateMaxTime(long elapsedNanos) {
-        long current;
-        while ((current = maxTimeNanos.get()) < elapsedNanos) {
-            if (maxTimeNanos.compareAndSet(current, elapsedNanos)) {
-                break;
-            }
-        }
+    public void recordFailure(long elapsedNanos, Throwable throwable) {
+        recordFailure(elapsedNanos, throwable, MetricsLevel.FULL);
     }
 
-    private void updateHistogram(long elapsedNanos) {
-        int index = 0;
-        while (index < TIME_BOUNDARIES.length && elapsedNanos > TIME_BOUNDARIES[index]) {
-            index++;
-        }
-        timeHistogram[index].increment();
-    }
+    // ========== Getter 方法 ==========
 
     public String getSqlKey() {
         return sqlKey;
@@ -154,15 +194,5 @@ public final class SqlMetrics {
 
     public static long[] getTimeBoundaries() {
         return TIME_BOUNDARIES.clone();
-    }
-
-    // ========== 兼容旧 API（反射模式使用）==========
-
-    public void recordSuccess(long elapsedNanos, Object result) {
-        recordSuccess(elapsedNanos, result, MetricsLevel.FULL);
-    }
-
-    public void recordFailure(long elapsedNanos, Throwable throwable) {
-        recordFailure(elapsedNanos, throwable, MetricsLevel.FULL);
     }
 }
