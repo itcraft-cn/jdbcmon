@@ -1,7 +1,6 @@
 package cn.itcraft.jdbcmon;
 
 import cn.itcraft.jdbcmon.config.ProxyConfig;
-import cn.itcraft.jdbcmon.core.JdbcProxy;
 import cn.itcraft.jdbcmon.datasource.ProxyDataSource;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 import cn.itcraft.jdbcmon.monitor.SqlStatistics;
@@ -37,7 +36,7 @@ class IntegrationTest {
             .useAdaptiveThreshold(true)
             .build();
 
-        proxyDataSource = (ProxyDataSource) JdbcProxy.wrapDataSource(h2DataSource, config);
+        proxyDataSource = new ProxyDataSource(h2DataSource, config);
         dataSource = proxyDataSource;
     }
 
