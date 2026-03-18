@@ -28,4 +28,4 @@ echo "[2/2] Running benchmarks..."
 echo ""
 
 CP="target/test-classes:../jdbcmon-core/target/jdbcmon-core-1.0.0-SNAPSHOT-jdk23.jar:target/dependency/*"
-$JAVA_HOME/bin/java --enable-preview -cp "$CP" cn.itcraft.jdbcmon.benchmark.BenchmarkRunner 2>&1 | tail -n 40
+$JAVA_HOME/bin/java -cp "$CP" cn.itcraft.jdbcmon.benchmark.BenchmarkRunner 2>&1 | tail -n 40
