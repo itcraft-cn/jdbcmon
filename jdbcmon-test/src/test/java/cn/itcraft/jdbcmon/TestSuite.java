@@ -9,7 +9,9 @@ import org.junit.platform.suite.api.SuiteDisplayName;
 @SelectClasses({
     SqlMetricsTest.class,
     AdaptiveThresholdTest.class,
-    IntegrationTest.class
+    IntegrationTest.class,
+    EventTest.class,
+    MonitoredResultSetTest.class
 })
 public class TestSuite {
 }
