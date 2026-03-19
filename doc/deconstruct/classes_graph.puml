@@ -1,0 +1,213 @@
+@startuml jdbcmon_classes
+!theme plain
+skinparam classAttributeIconSize 0
+
+' Config package
+package config {
+    class WrappedConfig {
+        - metricsLevel: MetricsLevel
+        - slowQueryThresholdMs: long
+        - useAdaptiveThreshold: boolean
+        + getMetricsLevel(): MetricsLevel
+        + getSlowQueryThresholdMs(): long
+    }
+    class WrappedConfig.Builder {
+        + metricsLevel(MetricsLevel): Builder
+        + slowQueryThresholdMs(long): Builder
+        + build(): WrappedConfig
+    }
+    enum MetricsLevel {
+        BASIC
+        EXTENDED
+        FULL
+    }
+    WrappedConfig +-- WrappedConfig.Builder
+}
+
+' Wrap package
+package wrap {
+    class WrappedDataSource {
+        - target: DataSource
+        - sqlMonitor: SqlMonitor
+        - config: WrappedConfig
+        + getConnection(): Connection
+        + shutdown(): void
+        + getSqlMonitor(): SqlMonitor
+    }
+    class WrappedDataSourceBuilder {
+        - target: DataSource
+        - config: WrappedConfig
+        + target(DataSource): WrappedDataSourceBuilder
+        + config(WrappedConfig): WrappedDataSourceBuilder
+        + build(): WrappedDataSource
+    }
+    class WrappedFactory {
+        + {static} wrapConnection(Connection, SqlMonitor, WrappedConfig): Connection
+        + {static} wrapStatement(Statement, SqlMonitor, WrappedConfig, long): Statement
+        + {static} wrapPreparedStatement(PreparedStatement, String, SqlMonitor, WrappedConfig, long): PreparedStatement
+    }
+    class MonitoredConnection {
+        - delegate: Connection
+        - monitor: SqlMonitor
+        - config: WrappedConfig
+        + createStatement(): Statement
+        + prepareStatement(String): PreparedStatement
+        + commit(): void
+        + rollback(): void
+    }
+    class MonitoredStatement {
+        - delegate: Statement
+        - monitor: SqlMonitor
+        + execute(String): boolean
+        + executeQuery(String): ResultSet
+        + executeUpdate(String): int
+        + executeBatch(): int[]
+    }
+    class MonitoredPreparedStatement {
+        - delegate: PreparedStatement
+        - monitor: SqlMonitor
+        - sql: String
+        - cachedMetrics: SqlMetrics
+        + execute(): boolean
+        + executeQuery(): ResultSet
+        + executeUpdate(): int
+    }
+    class MonitoredCallableStatement {
+        - delegate: CallableStatement
+        - monitor: SqlMonitor
+        - sql: String
+        - cachedMetrics: SqlMetrics
+    }
+    WrappedDataSource *-- SqlMonitor
+    WrappedDataSource *-- WrappedConfig
+    MonitoredConnection *-- SqlMonitor
+    MonitoredConnection --> Connection
+    MonitoredStatement --> MonitoredConnection : creates
+    MonitoredPreparedStatement --> MonitoredConnection : creates
+    MonitoredCallableStatement --> MonitoredConnection : creates
+    MonitoredPreparedStatement *-- SqlMetrics
+    MonitoredCallableStatement *-- SqlMetrics
+}
+
+' Monitor package
+package monitor {
+    class SqlMonitor {
+        - metricsMap: Map<String, SqlMetrics>
+        - recorder: MetricsRecorder
+        - listeners: CompositeSqlListener
+        - asyncExecutor: AsyncThreadExecutor
+        - slowQueryThresholdNanos: long
+        + recordQueryFast(SqlMetrics, long): void
+        + recordUpdateFast(SqlMetrics, long, int): void
+        + recordErrorFast(SqlMetrics, long, Throwable): void
+        + getOrCreateMetrics(String): SqlMetrics
+        + getStatistics(): SqlStatistics
+    }
+    class SqlMetrics {
+        - sqlKey: String
+        - executionCount: long
+        - successCount: long
+        - failureCount: long
+        - totalTimeNanos: long
+        - minTimeNanos: long
+        - maxTimeNanos: long
+        + recordSuccess(long, Object): void
+        + recordFailure(long, Throwable): void
+    }
+    class SqlStatistics {
+        - totalQueries: long
+        - totalUpdates: long
+        - totalErrors: long
+        - totalSlowQueries: long
+        + getTotalExecutions(): long
+        + getErrorRate(): double
+    }
+    interface MetricsRecorder {
+        + recordSuccess(SqlMetrics, long, Object): void
+        + recordFailure(SqlMetrics, long, Throwable): void
+    }
+    class BasicMetricsRecorder {
+        + recordSuccess(SqlMetrics, long, Object): void
+        + recordFailure(SqlMetrics, long, Throwable): void
+    }
+    class ExtendedMetricsRecorder {
+        + recordSuccess(SqlMetrics, long, Object): void
+        + recordFailure(SqlMetrics, long, Throwable): void
+    }
+    class FullMetricsRecorder {
+        + recordSuccess(SqlMetrics, long, Object): void
+        + recordFailure(SqlMetrics, long, Throwable): void
+    }
+    class AdaptiveThreshold {
+        - timeBuckets: long[]
+        - percentile: double
+        - currentThreshold: long
+        + record(long): void
+        + getThreshold(): long
+    }
+    MetricsRecorder <|.. BasicMetricsRecorder
+    MetricsRecorder <|.. ExtendedMetricsRecorder
+    MetricsRecorder <|.. FullMetricsRecorder
+    SqlMonitor *-- MetricsRecorder
+    SqlMonitor *-- CompositeSqlListener
+    SqlMonitor *-- AsyncThreadExecutor
+    SqlMonitor --> SqlMetrics : manages
+}
+
+' Listener package
+package listener {
+    interface SqlExecutionListener {
+        + onSuccess(SqlExecutionContext, long, Object): void
+        + onFailure(SqlExecutionContext, long, Throwable): void
+        + onSlowQuery(SqlExecutionContext, long): void
+    }
+    class CompositeSqlListener {
+        - listeners: List<SqlExecutionListener>
+        + addListener(SqlExecutionListener): void
+        + removeListener(SqlExecutionListener): void
+        + onSuccess(SqlExecutionContext, long, Object): void
+        + onFailure(SqlExecutionContext, long, Throwable): void
+        + onSlowQuery(SqlExecutionContext, long): void
+    }
+    class LoggingSqlListener {
+        + onSuccess(SqlExecutionContext, long, Object): void
+        + onFailure(SqlExecutionContext, long, Throwable): void
+        + onSlowQuery(SqlExecutionContext, long): void
+    }
+    SqlExecutionListener <|.. CompositeSqlListener
+    SqlExecutionListener <|.. LoggingSqlListener
+    CompositeSqlListener o-- SqlExecutionListener
+}
+
+' Thread package
+package thread {
+    class AsyncThreadExecutor {
+        - executor: ThreadPoolExecutor
+        - shutdown: boolean
+        + submit(Runnable): void
+        + shutdown(): void
+        + isShutdown(): boolean
+    }
+}
+
+' Core package
+package core {
+    class SqlExecutionContext {
+        - sql: String
+        - methodName: String
+        - threadName: String
+        - stackTrace: StackTraceElement[]
+        + getSql(): String
+        + getMethodName(): String
+    }
+}
+
+' Relationships between packages
+SqlMonitor --> AsyncThreadExecutor : uses
+SqlMonitor --> WrappedConfig : uses
+MonitoredStatement --> SqlMonitor : uses
+MonitoredPreparedStatement --> SqlMonitor : uses
+MonitoredPreparedStatement --> SqlMetrics : caches
+SqlExecutionListener --> SqlExecutionContext : uses
+
+@enduml

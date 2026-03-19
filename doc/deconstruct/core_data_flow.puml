@@ -1,0 +1,66 @@
+@startuml jdbcmon_data_flow
+!theme plain
+skinparam backgroundColor #FFFFFF
+
+title JDBC Query Monitoring Data Flow
+
+actor Application as app
+participant "WrappedDataSource" as ds
+participant "MonitoredConnection" as conn
+participant "MonitoredPreparedStatement" as ps
+participant "SqlMonitor" as monitor
+participant "MetricsRecorder" as recorder
+participant "SqlMetrics" as metrics
+participant "AsyncThreadExecutor" as executor
+participant "SqlExecutionListener" as listener
+database Database as db
+
+== Initialization ==
+app -> ds : getConnection()
+ds -> ds : target.getConnection()
+ds -> conn : **new** MonitoredConnection(conn, monitor, config)
+ds --> app : conn
+
+app -> conn : prepareStatement(sql)
+conn -> db : delegate.prepareStatement(sql)
+conn -> ps : **new** MonitoredPreparedStatement(stmt, monitor, sql)
+ps -> monitor : getOrCreateMetrics(sql)
+monitor -> metrics : **new** SqlMetrics(sql)
+monitor --> ps : cachedMetrics
+conn --> app : ps
+
+== Query Execution (Fast Path) ==
+app -> ps : executeQuery()
+ps -> ps : start = System.nanoTime()
+ps -> db : delegate.executeQuery()
+db --> ps : ResultSet
+ps -> ps : elapsed = System.nanoTime() - start
+ps -> monitor : recordQueryFast(cachedMetrics, elapsed)
+
+activate monitor
+monitor -> monitor : totalQueries.increment()
+monitor -> recorder : recordSuccess(metrics, elapsed, null)
+recorder -> metrics : addExecutionCount()
+recorder -> metrics : addTotalTime(elapsedNanos)
+recorder -> metrics : updateMin/Max(elapsedNanos) [EXTENDED]
+recorder -> metrics : updateHistogram(elapsedNanos) [FULL]
+monitor -> monitor : checkSlowQueryFast(sql, elapsed)
+alt elapsed > threshold
+    monitor -> executor : submit(onSlowQuery)
+    executor -> listener : onSlowQuery(context, elapsed)
+end
+deactivate monitor
+
+ps --> app : ResultSet
+
+== Error Handling ==
+app -> ps : executeQuery()
+ps -> db : delegate.executeQuery()
+db --> ps : **SQLException**
+ps -> monitor : recordErrorFast(cachedMetrics, elapsed, exception)
+monitor -> monitor : totalErrors.increment()
+monitor -> executor : submit(onFailure)
+executor -> listener : onFailure(context, elapsed, exception)
+ps --> app : **throw** SQLException
+
+@enduml
