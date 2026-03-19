@@ -1,6 +1,6 @@
 package cn.itcraft.jdbcmon.thread;
 
-import cn.itcraft.jdbcmon.config.ProxyConfig;
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -12,7 +12,7 @@ public final class AsyncThreadExecutor {
     private final ThreadPoolExecutor executor;
     private volatile boolean shutdown = false;
 
-    public AsyncThreadExecutor(ProxyConfig config) {
+    public AsyncThreadExecutor(WrappedConfig config) {
         int cpuCores = Runtime.getRuntime().availableProcessors();
         int coreSize = config != null ? config.getCorePoolSize() : Math.max(1, cpuCores / 2);
         int maxSize = config != null ? config.getMaxPoolSize() : cpuCores;

@@ -1,6 +1,6 @@
 package cn.itcraft.jdbcmon.wrap;
 
-import cn.itcraft.jdbcmon.config.ProxyConfig;
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 
 import java.sql.CallableStatement;
@@ -13,19 +13,19 @@ public final class WrappedFactory {
     private WrappedFactory() {
     }
 
-    public static Connection wrapConnection(Connection conn, SqlMonitor monitor, ProxyConfig config) {
+    public static Connection wrapConnection(Connection conn, SqlMonitor monitor, WrappedConfig config) {
         return new MonitoredConnection(conn, monitor, config);
     }
 
-    public static Statement wrapStatement(Statement stmt, SqlMonitor monitor, ProxyConfig config, long parentProxyId) {
+    public static Statement wrapStatement(Statement stmt, SqlMonitor monitor, WrappedConfig config, long parentProxyId) {
         return new MonitoredStatement(stmt, monitor);
     }
 
-    public static PreparedStatement wrapPreparedStatement(PreparedStatement stmt, String sql, SqlMonitor monitor, ProxyConfig config, long parentProxyId) {
+    public static PreparedStatement wrapPreparedStatement(PreparedStatement stmt, String sql, SqlMonitor monitor, WrappedConfig config, long parentProxyId) {
         return new MonitoredPreparedStatement(stmt, monitor, sql);
     }
 
-    public static CallableStatement wrapCallableStatement(CallableStatement stmt, String sql, SqlMonitor monitor, ProxyConfig config, long parentProxyId) {
+    public static CallableStatement wrapCallableStatement(CallableStatement stmt, String sql, SqlMonitor monitor, WrappedConfig config, long parentProxyId) {
         return new MonitoredCallableStatement(stmt, monitor, sql);
     }
 }

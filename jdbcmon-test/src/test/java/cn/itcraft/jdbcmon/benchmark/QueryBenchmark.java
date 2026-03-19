@@ -1,6 +1,6 @@
 package cn.itcraft.jdbcmon.benchmark;
 
-import cn.itcraft.jdbcmon.config.ProxyConfig;
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 import cn.itcraft.jdbcmon.wrap.WrappedDataSource;
 import org.h2.jdbcx.JdbcDataSource;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -91,7 +91,7 @@ public class QueryBenchmark {
         ds.setUser("sa");
         ds.setPassword("");
 
-        ProxyConfig config = new ProxyConfig.Builder()
+        WrappedConfig config = new WrappedConfig.Builder()
                 .slowQueryThresholdMs(1000)
                 .logSlowQueries(false)
                 .enableLogging(false)

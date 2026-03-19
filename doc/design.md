@@ -55,7 +55,7 @@ jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
 │   └── LoggingSqlListener.java        # 日志监听器
 │
 ├── config/                            # 配置
-│   └── ProxyConfig.java               # 配置类（Builder 模式）
+│   └── WrappedConfig.java              # 配置类（Builder 模式）
 │
 └── consts/                            # 常量
     └── JdbcConsts.java                # 常量定义
@@ -75,7 +75,7 @@ jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
 public final class Platform {
     private static final int JVM_VERSION = detectJvmVersion();
     
-    public static AsyncExecutor createAsyncExecutor(ProxyConfig config) {
+    public static AsyncExecutor createAsyncExecutor(WrappedConfig config) {
         if (JVM_VERSION >= 23) {
             return createVirtualThreadExecutor();  // JDK 23+ 虚拟线程
         }

@@ -1,6 +1,6 @@
 package cn.itcraft.jdbcmon;
 
-import cn.itcraft.jdbcmon.config.ProxyConfig;
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 import cn.itcraft.jdbcmon.monitor.AdaptiveThreshold;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -11,12 +11,12 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("Unit tests for AdaptiveThreshold")
 class AdaptiveThresholdTest {
 
-    private ProxyConfig config;
+    private WrappedConfig config;
     private AdaptiveThreshold threshold;
 
     @BeforeEach
     void setUp() {
-        config = new ProxyConfig.Builder()
+        config = new WrappedConfig.Builder()
             .slowQueryThresholdMs(1000)
             .adaptivePercentile(95.0)
             .adaptiveWindowSize(60)

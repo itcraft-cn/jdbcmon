@@ -1,7 +1,7 @@
 package cn.itcraft.jdbcmon.monitor;
 
 import cn.itcraft.jdbcmon.config.MetricsLevel;
-import cn.itcraft.jdbcmon.config.ProxyConfig;
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 import cn.itcraft.jdbcmon.core.SqlExecutionContext;
 import cn.itcraft.jdbcmon.thread.AsyncThreadExecutor;
 import cn.itcraft.jdbcmon.listener.CompositeSqlListener;
@@ -20,7 +20,7 @@ public final class SqlMonitor {
 
     private static final Logger log = LoggerFactory.getLogger(SqlMonitor.class);
 
-    private final ProxyConfig config;
+    private final WrappedConfig config;
     private final CompositeSqlListener listeners = new CompositeSqlListener();
     private final Map<String, SqlMetrics> metricsMap = new ConcurrentHashMap<>();
     private final AsyncThreadExecutor asyncExecutor;
@@ -38,7 +38,7 @@ public final class SqlMonitor {
     private final AdaptiveThreshold adaptiveThreshold;
     private final boolean logSlowQueries;
 
-    public SqlMonitor(ProxyConfig config) {
+    public SqlMonitor(WrappedConfig config) {
         this.config = config;
         this.currentLevel = config.getMetricsLevel();
         this.recorder = createRecorder(currentLevel);
@@ -319,7 +319,7 @@ public final class SqlMonitor {
         asyncExecutor.shutdown();
     }
 
-    public ProxyConfig getConfig() {
+    public WrappedConfig getConfig() {
         return config;
     }
 }

@@ -26,14 +26,14 @@
 ### 基本使用
 
 ```java
-import cn.itcraft.jdbcmon.config.ProxyConfig;
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 import cn.itcraft.jdbcmon.wrap.WrappedDataSourceBuilder;
 import cn.itcraft.jdbcmon.monitor.SqlStatistics;
 
 import javax.sql.DataSource;
 
 // 创建配置
-ProxyConfig config = new ProxyConfig.Builder()
+WrappedConfig config = new WrappedConfig.Builder()
     .slowQueryThresholdMs(500)
     .logSlowQueries(true)
     .useAdaptiveThreshold(true)

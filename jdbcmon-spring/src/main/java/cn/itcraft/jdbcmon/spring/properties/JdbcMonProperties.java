@@ -1,6 +1,6 @@
 package cn.itcraft.jdbcmon.spring.properties;
 
-import cn.itcraft.jdbcmon.config.ProxyConfig;
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "jdbcmon")
@@ -96,8 +96,8 @@ public class JdbcMonProperties {
         this.monitoring = monitoring;
     }
 
-    public ProxyConfig toProxyConfig() {
-        return new ProxyConfig.Builder()
+    public WrappedConfig toConfig() {
+        return new WrappedConfig.Builder()
             .enableMonitoring(enabled)
             .slowQueryThresholdMs(slowQueryThresholdMs)
             .logSlowQueries(logSlowQueries)

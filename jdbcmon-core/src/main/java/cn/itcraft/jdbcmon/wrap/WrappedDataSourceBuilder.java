@@ -1,6 +1,6 @@
 package cn.itcraft.jdbcmon.wrap;
 
-import cn.itcraft.jdbcmon.config.ProxyConfig;
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 
 import javax.sql.DataSource;
 import java.util.Objects;
@@ -8,7 +8,7 @@ import java.util.Objects;
 public final class WrappedDataSourceBuilder {
 
     private DataSource target;
-    private ProxyConfig config;
+    private WrappedConfig config;
     private String name;
 
     private WrappedDataSourceBuilder() {
@@ -27,7 +27,7 @@ public final class WrappedDataSourceBuilder {
         return this;
     }
 
-    public WrappedDataSourceBuilder config(ProxyConfig config) {
+    public WrappedDataSourceBuilder config(WrappedConfig config) {
         this.config = config;
         return this;
     }
@@ -41,7 +41,7 @@ public final class WrappedDataSourceBuilder {
         Objects.requireNonNull(target, "target DataSource cannot be null");
 
         if (config == null) {
-            config = new ProxyConfig.Builder().build();
+            config = new WrappedConfig.Builder().build();
         }
 
         return new WrappedDataSource(target, config);

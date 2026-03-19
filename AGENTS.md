@@ -76,7 +76,7 @@ mvn clean verify
 ## 核心配置
 
 ```java
-ProxyConfig config = new ProxyConfig.Builder()
+WrappedConfig config = new WrappedConfig.Builder()
     .metricsLevel(MetricsLevel.BASIC)  // BASIC/EXTENDED/FULL
     .slowQueryThresholdMs(1000)
     .build();

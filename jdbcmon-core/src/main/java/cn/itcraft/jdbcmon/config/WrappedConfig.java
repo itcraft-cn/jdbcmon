@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 
 import static cn.itcraft.jdbcmon.consts.JdbcConsts.*;
 
-public final class ProxyConfig {
+public final class WrappedConfig {
 
     private MetricsLevel metricsLevel = MetricsLevel.BASIC;
     
@@ -38,7 +38,7 @@ public final class ProxyConfig {
     private double adaptivePercentile = ADAPTIVE_PERCENTILE;
     private int adaptiveWindowSizeSeconds = ADAPTIVE_WINDOW_SIZE_SECONDS;
 
-    private ProxyConfig() {
+    private WrappedConfig() {
     }
 
     public MetricsLevel getMetricsLevel() {
@@ -155,7 +155,7 @@ public final class ProxyConfig {
     }
 
     public static class Builder {
-        private final ProxyConfig config = new ProxyConfig();
+        private final WrappedConfig config = new WrappedConfig();
 
         public Builder metricsLevel(MetricsLevel level) {
             config.metricsLevel = level;
@@ -261,7 +261,7 @@ public final class ProxyConfig {
             return this;
         }
 
-        public ProxyConfig build() {
+        public WrappedConfig build() {
             return config;
         }
     }

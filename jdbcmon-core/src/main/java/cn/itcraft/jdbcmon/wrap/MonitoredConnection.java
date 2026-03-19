@@ -1,6 +1,6 @@
 package cn.itcraft.jdbcmon.wrap;
 
-import cn.itcraft.jdbcmon.config.ProxyConfig;
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 
 import java.sql.Array;
@@ -23,9 +23,9 @@ public final class MonitoredConnection implements Connection {
 
     private final Connection delegate;
     private final SqlMonitor monitor;
-    private final ProxyConfig config;
+    private final WrappedConfig config;
 
-    public MonitoredConnection(Connection delegate, SqlMonitor monitor, ProxyConfig config) {
+    public MonitoredConnection(Connection delegate, SqlMonitor monitor, WrappedConfig config) {
         this.delegate = delegate;
         this.monitor = monitor;
         this.config = config;

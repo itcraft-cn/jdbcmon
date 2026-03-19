@@ -1,6 +1,6 @@
 package cn.itcraft.jdbcmon;
 
-import cn.itcraft.jdbcmon.config.ProxyConfig;
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 import cn.itcraft.jdbcmon.wrap.WrappedDataSource;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 import cn.itcraft.jdbcmon.monitor.SqlStatistics;
@@ -30,7 +30,7 @@ class IntegrationTest {
         h2DataSource.setUser("sa");
         h2DataSource.setPassword("");
 
-        ProxyConfig config = new ProxyConfig.Builder()
+        WrappedConfig config = new WrappedConfig.Builder()
             .slowQueryThresholdMs(500)
             .logSlowQueries(true)
             .useAdaptiveThreshold(true)

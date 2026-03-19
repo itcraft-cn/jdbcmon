@@ -1,6 +1,6 @@
 package cn.itcraft.jdbcmon.monitor;
 
-import cn.itcraft.jdbcmon.config.ProxyConfig;
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.LongAdder;
@@ -15,7 +15,7 @@ public final class AdaptiveThreshold {
     private volatile long currentThreshold;
     private volatile long lastUpdateTime;
 
-    public AdaptiveThreshold(ProxyConfig config) {
+    public AdaptiveThreshold(WrappedConfig config) {
         this.windowSizeSeconds = config.getAdaptiveWindowSizeSeconds();
         this.percentile = config.getAdaptivePercentile();
         this.timeBuckets = new LongAdder[windowSizeSeconds];

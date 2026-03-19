@@ -1,6 +1,6 @@
 package cn.itcraft.jdbcmon.spring.autoconfigure;
 
-import cn.itcraft.jdbcmon.config.ProxyConfig;
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 import cn.itcraft.jdbcmon.wrap.WrappedDataSource;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 import cn.itcraft.jdbcmon.spring.properties.JdbcMonProperties;
@@ -32,21 +32,21 @@ public class JdbcMonAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public ProxyConfig jdbcMonProxyConfig() {
+    public WrappedConfig wrappedConfig() {
         log.info("Initializing jdbcmon with slowQueryThresholdMs={}ms, adaptiveThreshold={}",
             properties.getSlowQueryThresholdMs(),
             properties.isUseAdaptiveThreshold());
-        return properties.toProxyConfig();
+        return properties.toConfig();
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public SqlMonitor sqlMonitor(ProxyConfig config) {
+    public SqlMonitor sqlMonitor(WrappedConfig config) {
         return new SqlMonitor(config);
     }
 
     @Bean
-    public BeanPostProcessor dataSourceProxyPostProcessor(ProxyConfig config, SqlMonitor sqlMonitor) {
+    public BeanPostProcessor dataSourceProxyPostProcessor(WrappedConfig config, SqlMonitor sqlMonitor) {
         return new BeanPostProcessor() {
             @Override
             public Object postProcessAfterInitialization(Object bean, String beanName) {

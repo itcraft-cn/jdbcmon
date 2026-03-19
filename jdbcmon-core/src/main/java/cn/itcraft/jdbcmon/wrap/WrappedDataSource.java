@@ -1,6 +1,6 @@
 package cn.itcraft.jdbcmon.wrap;
 
-import cn.itcraft.jdbcmon.config.ProxyConfig;
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 
 import java.io.PrintWriter;
@@ -16,12 +16,12 @@ public final class WrappedDataSource implements DataSource {
 
     private final DataSource target;
     private final SqlMonitor sqlMonitor;
-    private final ProxyConfig config;
+    private final WrappedConfig config;
     private final AtomicLong proxyIdGenerator = new AtomicLong();
 
-    public WrappedDataSource(DataSource target, ProxyConfig config) {
+    public WrappedDataSource(DataSource target, WrappedConfig config) {
         this.target = Objects.requireNonNull(target, "target cannot be null");
-        this.config = config != null ? config : new ProxyConfig.Builder().build();
+        this.config = config != null ? config : new WrappedConfig.Builder().build();
         this.sqlMonitor = new SqlMonitor(this.config);
     }
 
@@ -91,7 +91,7 @@ public final class WrappedDataSource implements DataSource {
         return target;
     }
 
-    public ProxyConfig getConfig() {
+    public WrappedConfig getConfig() {
         return config;
     }
 
