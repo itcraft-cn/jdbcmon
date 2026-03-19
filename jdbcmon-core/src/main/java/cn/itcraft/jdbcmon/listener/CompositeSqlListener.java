@@ -1,6 +1,6 @@
 package cn.itcraft.jdbcmon.listener;
 
-import cn.itcraft.jdbcmon.core.SqlExecutionContext;
+import cn.itcraft.jdbcmon.event.MonEvent;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -28,40 +28,10 @@ public final class CompositeSqlListener implements SqlExecutionListener {
     }
 
     @Override
-    public void onSuccess(SqlExecutionContext context, long elapsedNanos, Object result) {
+    public void onEvent(MonEvent event) {
         for (SqlExecutionListener listener : listeners) {
             try {
-                listener.onSuccess(context, elapsedNanos, result);
-            } catch (Exception ignored) {
-            }
-        }
-    }
-
-    @Override
-    public void onFailure(SqlExecutionContext context, long elapsedNanos, Throwable throwable) {
-        for (SqlExecutionListener listener : listeners) {
-            try {
-                listener.onFailure(context, elapsedNanos, throwable);
-            } catch (Exception ignored) {
-            }
-        }
-    }
-
-    @Override
-    public void onSlowQuery(SqlExecutionContext context, long elapsedMillis) {
-        for (SqlExecutionListener listener : listeners) {
-            try {
-                listener.onSlowQuery(context, elapsedMillis);
-            } catch (Exception ignored) {
-            }
-        }
-    }
-
-    @Override
-    public void onHugeRetSize(SqlExecutionContext context, int rowCount) {
-        for (SqlExecutionListener listener : listeners) {
-            try {
-                listener.onHugeRetSize(context, rowCount);
+                listener.onEvent(event);
             } catch (Exception ignored) {
             }
         }

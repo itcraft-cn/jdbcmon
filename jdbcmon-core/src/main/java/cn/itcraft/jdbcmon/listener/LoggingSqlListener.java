@@ -1,6 +1,7 @@
 package cn.itcraft.jdbcmon.listener;
 
 import cn.itcraft.jdbcmon.core.SqlExecutionContext;
+import cn.itcraft.jdbcmon.event.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,28 +20,50 @@ public final class LoggingSqlListener implements SqlExecutionListener {
     }
 
     @Override
-    public void onSuccess(SqlExecutionContext context, long elapsedNanos, Object result) {
-        long elapsedMs = elapsedNanos / 1_000_000;
-        String sql = context.getSql();
-        if (shouldLog()) {
-            log(log, "[JDBCMON] Success: {}ms - {}", elapsedMs, sql);
+    public void onEvent(MonEvent event) {
+        switch (event.getEventType()) {
+            case SUCCESS:
+                logSuccess((SuccessEvent) event);
+                break;
+            case FAILURE:
+                logFailure((FailureEvent) event);
+                break;
+            case SLOW_QUERY:
+                logSlowQuery((SlowQueryEvent) event);
+                break;
+            case HUGE_RESULT_SET:
+                logHugeResultSet((HugeResultSetEvent) event);
+                break;
+            default:
+                break;
         }
     }
 
-    @Override
-    public void onFailure(SqlExecutionContext context, long elapsedNanos, Throwable throwable) {
-        long elapsedMs = elapsedNanos / 1_000_000;
-        log.error("[JDBCMON] Failure: {}ms - {} - {}", elapsedMs, context.getSql(), throwable.getMessage());
+    private void logSuccess(SuccessEvent event) {
+        if (!shouldLog()) {
+            return;
+        }
+        SqlExecutionContext ctx = event.getContext();
+        long elapsedMs = event.getElapsedMillis();
+        log(log, "[JDBCMON] Success: {}ms - {}", elapsedMs, ctx.getSql());
     }
 
-    @Override
-    public void onSlowQuery(SqlExecutionContext context, long elapsedMillis) {
-        log.warn("[JDBCMON] SLOW QUERY: {}ms - {}", elapsedMillis, context.getSql());
+    private void logFailure(FailureEvent event) {
+        SqlExecutionContext ctx = event.getContext();
+        long elapsedMs = event.getElapsedMillis();
+        log.error("[JDBCMON] Failure: {}ms - {} - {}", elapsedMs, ctx.getSql(), event.getErrorMessage());
     }
 
-    @Override
-    public void onHugeRetSize(SqlExecutionContext context, int rowCount) {
-        log.warn("[JDBCMON] HUGE RESULTSET: {} rows - {}", rowCount, context.getSql());
+    private void logSlowQuery(SlowQueryEvent event) {
+        SqlExecutionContext ctx = event.getContext();
+        log.warn("[JDBCMON] SLOW QUERY: {}ms (threshold: {}ms) - {}",
+            event.getElapsedMillis(), event.getThresholdMs(), ctx.getSql());
+    }
+
+    private void logHugeResultSet(HugeResultSetEvent event) {
+        SqlExecutionContext ctx = event.getContext();
+        log.warn("[JDBCMON] HUGE RESULTSET: {} rows (threshold: {}) - {}",
+            event.getRowCount(), event.getThreshold(), ctx.getSql());
     }
 
     private boolean shouldLog() {

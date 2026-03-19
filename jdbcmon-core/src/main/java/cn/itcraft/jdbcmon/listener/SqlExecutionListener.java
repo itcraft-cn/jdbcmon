@@ -1,14 +1,9 @@
 package cn.itcraft.jdbcmon.listener;
 
-import cn.itcraft.jdbcmon.core.SqlExecutionContext;
+import cn.itcraft.jdbcmon.event.MonEvent;
 
+@FunctionalInterface
 public interface SqlExecutionListener {
 
-    void onSuccess(SqlExecutionContext context, long elapsedNanos, Object result);
-
-    void onFailure(SqlExecutionContext context, long elapsedNanos, Throwable throwable);
-
-    void onSlowQuery(SqlExecutionContext context, long elapsedMillis);
-
-    void onHugeRetSize(SqlExecutionContext context, int rowCount);
+    void onEvent(MonEvent event);
 }

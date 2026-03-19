@@ -3,6 +3,11 @@ package cn.itcraft.jdbcmon.monitor;
 import cn.itcraft.jdbcmon.config.MetricsLevel;
 import cn.itcraft.jdbcmon.config.WrappedConfig;
 import cn.itcraft.jdbcmon.core.SqlExecutionContext;
+import cn.itcraft.jdbcmon.event.FailureEvent;
+import cn.itcraft.jdbcmon.event.HugeResultSetEvent;
+import cn.itcraft.jdbcmon.event.MonEvent;
+import cn.itcraft.jdbcmon.event.SlowQueryEvent;
+import cn.itcraft.jdbcmon.event.SuccessEvent;
 import cn.itcraft.jdbcmon.thread.AsyncThreadExecutor;
 import cn.itcraft.jdbcmon.listener.CompositeSqlListener;
 import cn.itcraft.jdbcmon.listener.LoggingSqlListener;
@@ -250,34 +255,24 @@ public final class SqlMonitor {
         return config.getSlowQueryThresholdMs();
     }
 
-    private void notifyListenersAsync(SqlExecutionContext context, long elapsedNanos, Object result) {
+    private void publishEvent(MonEvent event) {
         if (listeners.getListeners().isEmpty()) {
             return;
         }
+        asyncExecutor.submit(() -> listeners.onEvent(event));
+    }
 
-        asyncExecutor.submit(() -> {
-            listeners.onSuccess(context, elapsedNanos, result);
-        });
+    private void notifyListenersAsync(SqlExecutionContext context, long elapsedNanos, Object result) {
+        publishEvent(new SuccessEvent(this, context, elapsedNanos, result));
     }
 
     private void notifyFailureListenersAsync(SqlExecutionContext context, long elapsedNanos, Throwable throwable) {
-        if (listeners.getListeners().isEmpty()) {
-            return;
-        }
-
-        asyncExecutor.submit(() -> {
-            listeners.onFailure(context, elapsedNanos, throwable);
-        });
+        publishEvent(new FailureEvent(this, context, elapsedNanos, throwable));
     }
 
     private void notifySlowQueryAsync(SqlExecutionContext context, long elapsedMillis) {
-        if (listeners.getListeners().isEmpty()) {
-            return;
-        }
-
-        asyncExecutor.submit(() -> {
-            listeners.onSlowQuery(context, elapsedMillis);
-        });
+        long threshold = getSlowQueryThreshold();
+        publishEvent(new SlowQueryEvent(this, context, elapsedMillis * 1_000_000, threshold));
     }
 
     public SqlStatistics getStatistics() {
@@ -321,9 +316,8 @@ public final class SqlMonitor {
         SqlExecutionContext context = new SqlExecutionContext();
         context.setSql(sql);
 
-        asyncExecutor.submit(() -> {
-            listeners.onHugeRetSize(context, rowCount);
-        });
+        int threshold = config.getHugeResultSetThreshold();
+        publishEvent(new HugeResultSetEvent(this, context, rowCount, threshold));
     }
 
     public void recordResultSetSize(String sql, int rowCount) {
