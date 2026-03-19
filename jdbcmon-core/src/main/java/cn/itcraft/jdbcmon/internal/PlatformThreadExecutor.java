@@ -6,14 +6,14 @@ import cn.itcraft.jdbcmon.spi.AsyncExecutor;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-final class PlatformThreadExecutor implements AsyncExecutor {
+public final class PlatformThreadExecutor implements AsyncExecutor {
 
     private static final AtomicInteger POOL_COUNTER = new AtomicInteger(0);
 
     private final ThreadPoolExecutor executor;
     private volatile boolean shutdown = false;
 
-    PlatformThreadExecutor(ProxyConfig config) {
+    public PlatformThreadExecutor(ProxyConfig config) {
         int cpuCores = Runtime.getRuntime().availableProcessors();
         int coreSize = config != null ? config.getCorePoolSize() : Math.max(1, cpuCores / 2);
         int maxSize = config != null ? config.getMaxPoolSize() : cpuCores;

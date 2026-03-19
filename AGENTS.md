@@ -32,9 +32,7 @@ jdbcmon 是一个高性能、可扩展的轻量级 JDBC 监控代理框架。
 
 ```
 jdbcmon/
-├── jdbcmon-core/           # 核心模块
-│   ├── src/main/java/      # JDK 8 基础代码
-│   └── src/main/java17/    # JDK 17+ 优化
+├── jdbcmon-core/           # 核心模块（JDK 8 兼容，JDK 17 性能更优）
 ├── jdbcmon-spring/         # Spring Boot 集成（需 JDK 17+）
 └── jdbcmon-test/           # 集成测试 & JMH 基准测试
 ```
@@ -91,8 +89,7 @@ DataSource proxyDataSource = new ProxyDataSource(targetDataSource, config);
 ```
 jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
 ├── spi/                      # SPI 接口层
-├── proxy/                    # 代理实现
-│   └── wrapper/              # 套壳模式
+├── wrap/                     # 套壳代理实现
 ├── monitor/                  # 监控核心
 ├── listener/                 # 监听器接口
 ├── datasource/               # 数据源包装

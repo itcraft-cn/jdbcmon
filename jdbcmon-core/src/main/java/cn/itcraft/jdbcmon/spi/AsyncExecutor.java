@@ -1,5 +1,8 @@
 package cn.itcraft.jdbcmon.spi;
 
+import cn.itcraft.jdbcmon.config.ProxyConfig;
+import cn.itcraft.jdbcmon.internal.PlatformThreadExecutor;
+
 import java.util.concurrent.RejectedExecutionException;
 
 public interface AsyncExecutor {
@@ -10,7 +13,7 @@ public interface AsyncExecutor {
 
     boolean isShutdown();
 
-    static AsyncExecutor create(cn.itcraft.jdbcmon.config.ProxyConfig config) {
-        return cn.itcraft.jdbcmon.internal.Platform.createAsyncExecutor(config);
+    static AsyncExecutor create(ProxyConfig config) {
+        return new PlatformThreadExecutor(config);
     }
 }
