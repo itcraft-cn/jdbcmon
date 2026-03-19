@@ -3,9 +3,9 @@ package cn.itcraft.jdbcmon.monitor;
 import cn.itcraft.jdbcmon.config.MetricsLevel;
 import cn.itcraft.jdbcmon.config.ProxyConfig;
 import cn.itcraft.jdbcmon.core.SqlExecutionContext;
+import cn.itcraft.jdbcmon.internal.PlatformThreadExecutor;
 import cn.itcraft.jdbcmon.listener.CompositeSqlListener;
 import cn.itcraft.jdbcmon.listener.LoggingSqlListener;
-import cn.itcraft.jdbcmon.spi.AsyncExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +23,7 @@ public final class SqlMonitor {
     private final ProxyConfig config;
     private final CompositeSqlListener listeners = new CompositeSqlListener();
     private final Map<String, SqlMetrics> metricsMap = new ConcurrentHashMap<>();
-    private final AsyncExecutor asyncExecutor;
+    private final PlatformThreadExecutor asyncExecutor;
 
     private volatile MetricsLevel currentLevel;
     private volatile MetricsRecorder recorder;
@@ -47,7 +47,7 @@ public final class SqlMonitor {
         this.adaptiveThreshold = config.isUseAdaptiveThreshold() 
             ? new AdaptiveThreshold(config) 
             : null;
-        this.asyncExecutor = AsyncExecutor.create(config);
+        this.asyncExecutor = new PlatformThreadExecutor(config);
 
         registerDefaultListeners();
     }
@@ -239,7 +239,7 @@ public final class SqlMonitor {
                     elapsedMillis, threshold, context.getSql());
             }
 
-            listeners.onSlowQuery(context, elapsedMillis);
+            notifySlowQueryAsync(context, elapsedMillis);
         }
     }
 
@@ -267,6 +267,16 @@ public final class SqlMonitor {
 
         asyncExecutor.submit(() -> {
             listeners.onFailure(context, elapsedNanos, throwable);
+        });
+    }
+
+    private void notifySlowQueryAsync(SqlExecutionContext context, long elapsedMillis) {
+        if (listeners.getListeners().isEmpty()) {
+            return;
+        }
+
+        asyncExecutor.submit(() -> {
+            listeners.onSlowQuery(context, elapsedMillis);
         });
     }
 

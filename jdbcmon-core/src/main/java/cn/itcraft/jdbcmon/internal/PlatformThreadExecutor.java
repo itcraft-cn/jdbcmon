@@ -1,12 +1,11 @@
 package cn.itcraft.jdbcmon.internal;
 
 import cn.itcraft.jdbcmon.config.ProxyConfig;
-import cn.itcraft.jdbcmon.spi.AsyncExecutor;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public final class PlatformThreadExecutor implements AsyncExecutor {
+public final class PlatformThreadExecutor {
 
     private static final AtomicInteger POOL_COUNTER = new AtomicInteger(0);
 
@@ -30,7 +29,6 @@ public final class PlatformThreadExecutor implements AsyncExecutor {
         );
     }
 
-    @Override
     public void submit(Runnable task) {
         if (shutdown) {
             throw new RejectedExecutionException("Executor has been shutdown");
@@ -38,7 +36,6 @@ public final class PlatformThreadExecutor implements AsyncExecutor {
         executor.submit(task);
     }
 
-    @Override
     public void shutdown() {
         shutdown = true;
         executor.shutdown();
@@ -52,7 +49,6 @@ public final class PlatformThreadExecutor implements AsyncExecutor {
         }
     }
 
-    @Override
     public boolean isShutdown() {
         return shutdown || executor.isShutdown();
     }

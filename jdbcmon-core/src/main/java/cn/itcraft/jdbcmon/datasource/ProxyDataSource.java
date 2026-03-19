@@ -3,7 +3,6 @@ package cn.itcraft.jdbcmon.datasource;
 import cn.itcraft.jdbcmon.config.ProxyConfig;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 import cn.itcraft.jdbcmon.wrap.WrapperProxyFactory;
-import cn.itcraft.jdbcmon.spi.JdbcProxyFactory;
 
 import java.io.PrintWriter;
 import java.sql.Connection;
@@ -19,7 +18,7 @@ public final class ProxyDataSource implements DataSource {
     private final DataSource target;
     private final SqlMonitor sqlMonitor;
     private final ProxyConfig config;
-    private final JdbcProxyFactory proxyFactory;
+    private final WrapperProxyFactory proxyFactory;
     private final AtomicLong proxyIdGenerator = new AtomicLong();
 
     public ProxyDataSource(DataSource target, ProxyConfig config) {

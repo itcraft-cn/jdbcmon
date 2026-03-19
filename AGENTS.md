@@ -88,11 +88,11 @@ DataSource proxyDataSource = new ProxyDataSource(targetDataSource, config);
 
 ```
 jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
-├── spi/                      # SPI 接口层
 ├── wrap/                     # 套壳代理实现
 ├── monitor/                  # 监控核心
-├── listener/                 # 监听器接口
+├── listener/                 # 监听器接口（异步触发）
 ├── datasource/               # 数据源包装
+├── internal/                 # 内部实现
 ├── config/                   # 配置
 └── consts/                   # 常量
 ```
