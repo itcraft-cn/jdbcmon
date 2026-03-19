@@ -1,8 +1,7 @@
-package cn.itcraft.jdbcmon.datasource;
+package cn.itcraft.jdbcmon.wrap;
 
 import cn.itcraft.jdbcmon.config.ProxyConfig;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
-import cn.itcraft.jdbcmon.wrap.WrapperProxyFactory;
 
 import java.io.PrintWriter;
 import java.sql.Connection;
@@ -13,19 +12,17 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.sql.DataSource;
 
-public final class ProxyDataSource implements DataSource {
+public final class WrappedDataSource implements DataSource {
 
     private final DataSource target;
     private final SqlMonitor sqlMonitor;
     private final ProxyConfig config;
-    private final WrapperProxyFactory proxyFactory;
     private final AtomicLong proxyIdGenerator = new AtomicLong();
 
-    public ProxyDataSource(DataSource target, ProxyConfig config) {
+    public WrappedDataSource(DataSource target, ProxyConfig config) {
         this.target = Objects.requireNonNull(target, "target cannot be null");
         this.config = config != null ? config : new ProxyConfig.Builder().build();
         this.sqlMonitor = new SqlMonitor(this.config);
-        this.proxyFactory = new WrapperProxyFactory();
     }
 
     @Override
@@ -45,7 +42,7 @@ public final class ProxyDataSource implements DataSource {
             return null;
         }
         long proxyId = proxyIdGenerator.incrementAndGet();
-        return proxyFactory.wrapConnection(conn, sqlMonitor, config);
+        return WrappedFactory.wrapConnection(conn, sqlMonitor, config);
     }
 
     @Override

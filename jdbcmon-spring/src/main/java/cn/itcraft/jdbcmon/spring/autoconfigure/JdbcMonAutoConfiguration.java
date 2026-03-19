@@ -1,7 +1,7 @@
 package cn.itcraft.jdbcmon.spring.autoconfigure;
 
 import cn.itcraft.jdbcmon.config.ProxyConfig;
-import cn.itcraft.jdbcmon.datasource.ProxyDataSource;
+import cn.itcraft.jdbcmon.wrap.WrappedDataSource;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 import cn.itcraft.jdbcmon.spring.properties.JdbcMonProperties;
 import org.slf4j.Logger;
@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Bean;
 import javax.sql.DataSource;
 
 @AutoConfiguration
-@ConditionalOnClass({DataSource.class, ProxyDataSource.class})
+@ConditionalOnClass({DataSource.class, WrappedDataSource.class})
 @ConditionalOnProperty(prefix = "jdbcmon", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(JdbcMonProperties.class)
 public class JdbcMonAutoConfiguration {
@@ -50,9 +50,9 @@ public class JdbcMonAutoConfiguration {
         return new BeanPostProcessor() {
             @Override
             public Object postProcessAfterInitialization(Object bean, String beanName) {
-                if (bean instanceof DataSource && !(bean instanceof ProxyDataSource)) {
+                if (bean instanceof DataSource && !(bean instanceof WrappedDataSource)) {
                     log.info("Wrapping DataSource bean '{}' with jdbcmon proxy", beanName);
-                    return new ProxyDataSource((DataSource) bean, config);
+                    return new WrappedDataSource((DataSource) bean, config);
                 }
                 return bean;
             }

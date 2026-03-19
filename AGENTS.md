@@ -81,18 +81,25 @@ ProxyConfig config = new ProxyConfig.Builder()
     .slowQueryThresholdMs(1000)
     .build();
 
-DataSource proxyDataSource = new ProxyDataSource(targetDataSource, config);
+DataSource wrappedDataSource = new WrappedDataSource(targetDataSource, config);
 ```
 
 ## 项目结构
 
 ```
 jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
-├── wrap/                     # 套壳代理实现
+├── wrap/                     # 包装代理实现
+│   ├── WrappedFactory.java   # 静态工厂
+│   ├── WrappedDataSource.java
+│   ├── WrappedDataSourceBuilder.java
+│   ├── MonitoredConnection.java
+│   ├── MonitoredStatement.java
+│   ├── MonitoredPreparedStatement.java
+│   └── MonitoredCallableStatement.java
+├── thread/                   # 线程相关
+│   └── AsyncThreadExecutor.java
 ├── monitor/                  # 监控核心
 ├── listener/                 # 监听器接口（异步触发）
-├── datasource/               # 数据源包装
-├── internal/                 # 内部实现
 ├── config/                   # 配置
 └── consts/                   # 常量
 ```

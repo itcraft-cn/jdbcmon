@@ -28,44 +28,37 @@ jdbcmon/
 
 ```
 jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
-├── spi/                             # SPI 接口层
-│   ├── MethodInvoker.java           # 方法调用器接口
-│   ├── AsyncExecutor.java           # 异步执行器接口
-│   └── VarAccessor.java             # 变量访问器接口
+├── wrap/                              # 包装代理实现
+│   ├── WrappedFactory.java            # 静态工厂
+│   ├── WrappedDataSource.java         # 包装数据源
+│   ├── WrappedDataSourceBuilder.java  # 建造者
+│   ├── MonitoredConnection.java       # Connection 包装
+│   ├── MonitoredStatement.java        # Statement 包装
+│   ├── MonitoredPreparedStatement.java
+│   └── MonitoredCallableStatement.java
 │
-├── internal/                        # 内部实现
-│   ├── Platform.java                # 平台检测 + 实现路由
-│   ├── MethodHandleInvoker.java     # MethodHandle 调用器
-│   └── PlatformThreadExecutor.java  # 平台线程执行器
+├── thread/                            # 线程相关
+│   └── AsyncThreadExecutor.java       # 异步线程执行器
 │
-├── core/                            # 核心代理
-│   ├── JdbcProxy.java               # 代理工厂入口
-│   ├── ProxyInvocationHandler.java  # 统一代理处理器
-│   ├── ConnectionProxyHandler.java  # Connection 专用处理器
-│   ├── StatementProxyHandler.java   # Statement/PreparedStatement 处理器
-│   ├── ResultSetProxyHandler.java   # ResultSet 处理器
-│   └── SqlExecutionContext.java     # SQL 执行上下文
+├── core/                              # 核心代理
+│   └── SqlExecutionContext.java       # SQL 执行上下文
 │
-├── datasource/                      # 数据源代理
-│   ├── ProxyDataSource.java         # 代理数据源
-│   └── ProxyDataSourceBuilder.java  # 建造者
+├── monitor/                           # 监控核心
+│   ├── SqlMonitor.java                # 监控核心
+│   ├── SqlMetrics.java                # 单 SQL 指标
+│   ├── SqlStatistics.java             # 统计聚合
+│   └── AdaptiveThreshold.java         # 自适应阈值算法
 │
-├── monitor/                         # 监控核心
-│   ├── SqlMonitor.java              # 监控核心
-│   ├── SqlMetrics.java              # 单 SQL 指标
-│   ├── SqlStatistics.java           # 统计聚合
-│   └── AdaptiveThreshold.java       # 自适应阈值算法
+├── listener/                          # 监听器
+│   ├── SqlExecutionListener.java      # 监听器接口
+│   ├── CompositeSqlListener.java      # 组合监听器
+│   └── LoggingSqlListener.java        # 日志监听器
 │
-├── listener/                        # 监听器
-│   ├── SqlExecutionListener.java    # 监听器接口
-│   ├── CompositeSqlListener.java    # 组合监听器
-│   └── LoggingSqlListener.java      # 日志监听器
+├── config/                            # 配置
+│   └── ProxyConfig.java               # 配置类（Builder 模式）
 │
-├── config/                          # 配置
-│   └── ProxyConfig.java             # 配置类（Builder 模式）
-│
-└── consts/                          # 常量
-    └── JdbcConsts.java              # 常量定义
+└── consts/                            # 常量
+    └── JdbcConsts.java                # 常量定义
 ```
 
 ### 2.3 多 JDK 版本架构

@@ -27,7 +27,7 @@
 
 ```java
 import cn.itcraft.jdbcmon.config.ProxyConfig;
-import cn.itcraft.jdbcmon.datasource.ProxyDataSourceBuilder;
+import cn.itcraft.jdbcmon.wrap.WrappedDataSourceBuilder;
 import cn.itcraft.jdbcmon.monitor.SqlStatistics;
 
 import javax.sql.DataSource;
@@ -40,16 +40,13 @@ ProxyConfig config = new ProxyConfig.Builder()
     .build();
 
 // 包装数据源
-DataSource proxyDataSource = ProxyDataSourceBuilder.create(originalDataSource)
+DataSource wrappedDataSource = WrappedDataSourceBuilder.create(originalDataSource)
     .config(config)
     .build();
 
-// 获取统计信息
-if (proxyDataSource instanceof cn.itcraft.jdbcmon.datasource.ProxyDataSource) {
-    SqlStatistics stats = ((cn.itcraft.jdbcmon.datasource.ProxyDataSource) proxyDataSource)
-        .getSqlMonitor().getStatistics();
-    
-    System.out.println("总查询数: " + stats.getTotalQueries());
+if (wrappedDataSource instanceof cn.itcraft.jdbcmon.wrap.WrappedDataSource) {
+    SqlStatistics stats = ((cn.itcraft.jdbcmon.wrap.WrappedDataSource) wrappedDataSource)
+        System.out.println("总查询数: " + stats.getTotalQueries());
     System.out.println("慢查询数: " + stats.getTotalSlowQueries());
 }
 ```

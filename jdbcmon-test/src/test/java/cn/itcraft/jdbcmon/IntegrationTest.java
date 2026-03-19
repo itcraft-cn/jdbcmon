@@ -1,7 +1,7 @@
 package cn.itcraft.jdbcmon;
 
 import cn.itcraft.jdbcmon.config.ProxyConfig;
-import cn.itcraft.jdbcmon.datasource.ProxyDataSource;
+import cn.itcraft.jdbcmon.wrap.WrappedDataSource;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 import cn.itcraft.jdbcmon.monitor.SqlStatistics;
 import org.h2.jdbcx.JdbcDataSource;
@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class IntegrationTest {
 
     private DataSource dataSource;
-    private ProxyDataSource proxyDataSource;
+    private WrappedDataSource wrappedDataSource;
 
     @BeforeEach
     void setUp() {
@@ -36,14 +36,14 @@ class IntegrationTest {
             .useAdaptiveThreshold(true)
             .build();
 
-        proxyDataSource = new ProxyDataSource(h2DataSource, config);
-        dataSource = proxyDataSource;
+        wrappedDataSource = new WrappedDataSource(h2DataSource, config);
+        dataSource = wrappedDataSource;
     }
 
     @AfterEach
     void tearDown() {
-        if (proxyDataSource != null) {
-            proxyDataSource.shutdown();
+        if (wrappedDataSource != null) {
+            wrappedDataSource.shutdown();
         }
     }
 
@@ -63,7 +63,7 @@ class IntegrationTest {
             }
         }
 
-        SqlMonitor monitor = proxyDataSource.getSqlMonitor();
+        SqlMonitor monitor = wrappedDataSource.getSqlMonitor();
         SqlStatistics stats = monitor.getStatistics();
 
         assertTrue(stats.getTotalExecutions() > 0);
@@ -82,7 +82,7 @@ class IntegrationTest {
             assertEquals(1, rows);
         }
 
-        SqlMonitor monitor = proxyDataSource.getSqlMonitor();
+        SqlMonitor monitor = wrappedDataSource.getSqlMonitor();
         SqlStatistics stats = monitor.getStatistics();
 
         assertTrue(stats.getTotalUpdates() > 0);
@@ -112,7 +112,7 @@ class IntegrationTest {
             }
         }
 
-        SqlMonitor monitor = proxyDataSource.getSqlMonitor();
+        SqlMonitor monitor = wrappedDataSource.getSqlMonitor();
         SqlStatistics stats = monitor.getStatistics();
 
         assertTrue(stats.getTotalExecutions() > 0);
@@ -142,7 +142,7 @@ class IntegrationTest {
             ps.close();
         }
 
-        SqlMonitor monitor = proxyDataSource.getSqlMonitor();
+        SqlMonitor monitor = wrappedDataSource.getSqlMonitor();
         SqlStatistics stats = monitor.getStatistics();
 
         assertTrue(stats.getTotalBatchOps() > 0);
@@ -164,7 +164,7 @@ class IntegrationTest {
     @Test
     @DisplayName("test_proxyDataSource_isWrapperFor")
     void test_proxyDataSource_isWrapperFor() throws Exception {
-        assertTrue(proxyDataSource.isWrapperFor(ProxyDataSource.class));
-        assertTrue(proxyDataSource.isWrapperFor(DataSource.class));
+        assertTrue(wrappedDataSource.isWrapperFor(WrappedDataSource.class));
+        assertTrue(wrappedDataSource.isWrapperFor(DataSource.class));
     }
 }

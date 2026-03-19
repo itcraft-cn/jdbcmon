@@ -1,6 +1,6 @@
 package cn.itcraft.jdbcmon.spring.endpoint;
 
-import cn.itcraft.jdbcmon.datasource.ProxyDataSource;
+import cn.itcraft.jdbcmon.wrap.WrappedDataSource;
 import cn.itcraft.jdbcmon.monitor.SqlStatistics;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
@@ -15,20 +15,20 @@ import java.util.Map;
 @Component
 @Endpoint(id = "jdbcmon")
 @ConditionalOnClass(name = "org.springframework.boot.actuate.endpoint.annotation.Endpoint")
-@ConditionalOnBean(ProxyDataSource.class)
+@ConditionalOnBean(WrappedDataSource.class)
 public class JdbcMonEndpoint {
 
-    private final ProxyDataSource proxyDataSource;
+    private final WrappedDataSource wrappedDataSource;
 
-    public JdbcMonEndpoint(ProxyDataSource proxyDataSource) {
-        this.proxyDataSource = proxyDataSource;
+    public JdbcMonEndpoint(WrappedDataSource wrappedDataSource) {
+        this.wrappedDataSource = wrappedDataSource;
     }
 
     @ReadOperation
     public Map<String, Object> monitor() {
         Map<String, Object> result = new HashMap<>();
 
-        SqlMonitor monitor = proxyDataSource.getSqlMonitor();
+        SqlMonitor monitor = wrappedDataSource.getSqlMonitor();
         SqlStatistics stats = monitor.getStatistics();
 
         result.put("totalQueries", stats.getTotalQueries());

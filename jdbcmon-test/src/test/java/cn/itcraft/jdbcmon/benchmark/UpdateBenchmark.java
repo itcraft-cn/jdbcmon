@@ -1,7 +1,7 @@
 package cn.itcraft.jdbcmon.benchmark;
 
 import cn.itcraft.jdbcmon.config.ProxyConfig;
-import cn.itcraft.jdbcmon.datasource.ProxyDataSource;
+import cn.itcraft.jdbcmon.wrap.WrappedDataSource;
 import org.h2.jdbcx.JdbcDataSource;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -112,7 +112,7 @@ public class UpdateBenchmark {
                 .useAdaptiveThreshold(false)
                 .build();
 
-        return new ProxyDataSource(ds, config);
+        return new WrappedDataSource(ds, config);
     }
 
     private void initTestData(DataSource ds) throws Exception {

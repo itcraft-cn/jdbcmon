@@ -1,18 +1,18 @@
-package cn.itcraft.jdbcmon.internal;
+package cn.itcraft.jdbcmon.thread;
 
 import cn.itcraft.jdbcmon.config.ProxyConfig;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public final class PlatformThreadExecutor {
+public final class AsyncThreadExecutor {
 
     private static final AtomicInteger POOL_COUNTER = new AtomicInteger(0);
 
     private final ThreadPoolExecutor executor;
     private volatile boolean shutdown = false;
 
-    public PlatformThreadExecutor(ProxyConfig config) {
+    public AsyncThreadExecutor(ProxyConfig config) {
         int cpuCores = Runtime.getRuntime().availableProcessors();
         int coreSize = config != null ? config.getCorePoolSize() : Math.max(1, cpuCores / 2);
         int maxSize = config != null ? config.getMaxPoolSize() : cpuCores;
