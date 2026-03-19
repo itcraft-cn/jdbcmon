@@ -61,9 +61,9 @@ public class ResultSetBenchmark {
         proxiedConnection = proxiedDataSource.getConnection();
 
         directPreparedStatement = directConnection.prepareStatement(
-            "SELECT id, name, value FROM rs_bench WHERE id < ?");
+            "SELECT id, name, val FROM rs_bench WHERE id < ?");
         proxiedPreparedStatement = proxiedConnection.prepareStatement(
-            "SELECT id, name, value FROM rs_bench WHERE id < ?");
+            "SELECT id, name, val FROM rs_bench WHERE id < ?");
     }
 
     @TearDown(Level.Iteration)
@@ -103,7 +103,7 @@ public class ResultSetBenchmark {
         try (Connection conn = ds.getConnection();
              Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_bench");
-            stmt.execute("CREATE TABLE rs_bench (id INT PRIMARY KEY, name VARCHAR(100), value INT)");
+            stmt.execute("CREATE TABLE rs_bench (id INT PRIMARY KEY, name VARCHAR(100), val INT)");
             for (int i = 0; i < rows; i++) {
                 stmt.execute("INSERT INTO rs_bench VALUES (" + i + ", 'name" + i + "', " + i + ")");
             }
@@ -117,7 +117,7 @@ public class ResultSetBenchmark {
             while (rs.next()) {
                 bh.consume(rs.getInt("id"));
                 bh.consume(rs.getString("name"));
-                bh.consume(rs.getInt("value"));
+                bh.consume(rs.getInt("val"));
             }
         }
     }
@@ -129,7 +129,7 @@ public class ResultSetBenchmark {
             while (rs.next()) {
                 bh.consume(rs.getInt("id"));
                 bh.consume(rs.getString("name"));
-                bh.consume(rs.getInt("value"));
+                bh.consume(rs.getInt("val"));
             }
         }
     }
@@ -185,7 +185,7 @@ public class ResultSetBenchmark {
             if (rs.next()) {
                 bh.consume(rs.getInt("id"));
                 bh.consume(rs.getString("name"));
-                bh.consume(rs.getInt("value"));
+                bh.consume(rs.getInt("val"));
             }
         }
     }
@@ -197,7 +197,7 @@ public class ResultSetBenchmark {
             if (rs.next()) {
                 bh.consume(rs.getInt("id"));
                 bh.consume(rs.getString("name"));
-                bh.consume(rs.getInt("value"));
+                bh.consume(rs.getInt("val"));
             }
         }
     }
