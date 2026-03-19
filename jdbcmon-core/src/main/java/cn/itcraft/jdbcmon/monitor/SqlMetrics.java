@@ -16,6 +16,7 @@ public final class SqlMetrics {
     private final AtomicLong minTimeNanos = new AtomicLong(Long.MAX_VALUE);
     private final AtomicLong maxTimeNanos = new AtomicLong(Long.MIN_VALUE);
     private final LongAdder rowsAffected = new LongAdder();
+    private final LongAdder totalResultRows = new LongAdder();
 
     private final LongAdder successCount = new LongAdder();
     private final LongAdder[] timeHistogram;
@@ -86,6 +87,10 @@ public final class SqlMetrics {
         for (int count : rows) {
             rowsAffected.add(count);
         }
+    }
+
+    void addResultRows(int rows) {
+        totalResultRows.add(rows);
     }
 
     void updateHistogramIndex(long elapsedNanos) {
@@ -182,6 +187,10 @@ public final class SqlMetrics {
 
     public long getRowsAffected() {
         return rowsAffected.sum();
+    }
+
+    public long getTotalResultRows() {
+        return totalResultRows.sum();
     }
 
     public long[] getHistogramData() {

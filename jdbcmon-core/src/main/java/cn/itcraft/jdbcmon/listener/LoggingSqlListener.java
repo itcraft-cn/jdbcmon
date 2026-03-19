@@ -38,6 +38,11 @@ public final class LoggingSqlListener implements SqlExecutionListener {
         log.warn("[JDBCMON] SLOW QUERY: {}ms - {}", elapsedMillis, context.getSql());
     }
 
+    @Override
+    public void onHugeRetSize(SqlExecutionContext context, int rowCount) {
+        log.warn("[JDBCMON] HUGE RESULTSET: {} rows - {}", rowCount, context.getSql());
+    }
+
     private boolean shouldLog() {
         switch (logLevel) {
             case DEBUG:

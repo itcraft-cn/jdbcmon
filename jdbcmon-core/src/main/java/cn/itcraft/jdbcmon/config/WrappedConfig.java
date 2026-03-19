@@ -38,6 +38,9 @@ public final class WrappedConfig {
     private double adaptivePercentile = ADAPTIVE_PERCENTILE;
     private int adaptiveWindowSizeSeconds = ADAPTIVE_WINDOW_SIZE_SECONDS;
 
+    private int hugeResultSetThreshold = DEFAULT_HUGE_RESULTSET_THRESHOLD;
+    private HugeResultSetAction hugeResultSetAction = HugeResultSetAction.NOTIFY_IMMEDIATE;
+
     private WrappedConfig() {
     }
 
@@ -127,6 +130,14 @@ public final class WrappedConfig {
 
     public int getAdaptiveWindowSizeSeconds() {
         return adaptiveWindowSizeSeconds;
+    }
+
+    public int getHugeResultSetThreshold() {
+        return hugeResultSetThreshold;
+    }
+
+    public HugeResultSetAction getHugeResultSetAction() {
+        return hugeResultSetAction;
     }
 
     public boolean shouldFilter(String sql) {
@@ -258,6 +269,16 @@ public final class WrappedConfig {
 
         public Builder adaptiveWindowSize(int seconds) {
             config.adaptiveWindowSizeSeconds = seconds;
+            return this;
+        }
+
+        public Builder hugeResultSetThreshold(int threshold) {
+            config.hugeResultSetThreshold = threshold;
+            return this;
+        }
+
+        public Builder hugeResultSetAction(HugeResultSetAction action) {
+            config.hugeResultSetAction = action;
             return this;
         }
 

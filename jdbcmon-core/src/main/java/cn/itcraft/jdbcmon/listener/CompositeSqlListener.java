@@ -56,4 +56,14 @@ public final class CompositeSqlListener implements SqlExecutionListener {
             }
         }
     }
+
+    @Override
+    public void onHugeRetSize(SqlExecutionContext context, int rowCount) {
+        for (SqlExecutionListener listener : listeners) {
+            try {
+                listener.onHugeRetSize(context, rowCount);
+            } catch (Exception ignored) {
+            }
+        }
+    }
 }

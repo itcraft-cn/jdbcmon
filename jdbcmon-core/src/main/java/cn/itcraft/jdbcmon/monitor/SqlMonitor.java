@@ -315,6 +315,31 @@ public final class SqlMonitor {
         return metricsMap;
     }
 
+    public void notifyHugeResultSet(String sql, int rowCount) {
+        if (listeners.getListeners().isEmpty()) return;
+
+        SqlExecutionContext context = new SqlExecutionContext();
+        context.setSql(sql);
+
+        asyncExecutor.submit(() -> {
+            listeners.onHugeRetSize(context, rowCount);
+        });
+    }
+
+    public void recordResultSetSize(String sql, int rowCount) {
+        if (sql == null || sql.isEmpty()) return;
+        
+        SqlMetrics metrics = metricsMap.get(sql);
+        if (metrics != null) {
+            metrics.addResultRows(rowCount);
+        }
+
+        if (config.getHugeResultSetAction() == cn.itcraft.jdbcmon.config.HugeResultSetAction.NOTIFY_AFTER
+            && rowCount >= config.getHugeResultSetThreshold()) {
+            notifyHugeResultSet(sql, rowCount);
+        }
+    }
+
     public void shutdown() {
         asyncExecutor.shutdown();
     }

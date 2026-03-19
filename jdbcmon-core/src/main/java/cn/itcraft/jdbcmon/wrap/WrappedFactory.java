@@ -18,14 +18,14 @@ public final class WrappedFactory {
     }
 
     public static Statement wrapStatement(Statement stmt, SqlMonitor monitor, WrappedConfig config, long parentProxyId) {
-        return new MonitoredStatement(stmt, monitor);
+        return new MonitoredStatement(stmt, monitor, config);
     }
 
     public static PreparedStatement wrapPreparedStatement(PreparedStatement stmt, String sql, SqlMonitor monitor, WrappedConfig config, long parentProxyId) {
-        return new MonitoredPreparedStatement(stmt, monitor, sql);
+        return new MonitoredPreparedStatement(stmt, monitor, sql, config);
     }
 
     public static CallableStatement wrapCallableStatement(CallableStatement stmt, String sql, SqlMonitor monitor, WrappedConfig config, long parentProxyId) {
-        return new MonitoredCallableStatement(stmt, monitor, sql);
+        return new MonitoredCallableStatement(stmt, monitor, sql, config);
     }
 }

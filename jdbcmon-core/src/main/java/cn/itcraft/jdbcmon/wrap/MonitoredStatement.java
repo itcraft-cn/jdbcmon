@@ -1,5 +1,6 @@
 package cn.itcraft.jdbcmon.wrap;
 
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 
 import java.sql.Connection;
@@ -10,10 +11,12 @@ public final class MonitoredStatement implements Statement {
 
     private final Statement delegate;
     private final SqlMonitor monitor;
+    private final WrappedConfig config;
 
-    public MonitoredStatement(Statement delegate, SqlMonitor monitor) {
+    public MonitoredStatement(Statement delegate, SqlMonitor monitor, WrappedConfig config) {
         this.delegate = delegate;
         this.monitor = monitor;
+        this.config = config;
     }
 
     // ========== 监控方法 ==========
@@ -76,7 +79,8 @@ public final class MonitoredStatement implements Statement {
         try {
             ResultSet rs = delegate.executeQuery(sql);
             monitor.recordQuery(sql, System.nanoTime() - start);
-            return rs;
+            return new MonitoredResultSet(rs, monitor, sql,
+                config.getHugeResultSetThreshold(), config.getHugeResultSetAction());
         } catch (java.sql.SQLException e) {
             monitor.recordError(sql, System.nanoTime() - start, e);
             throw e;
@@ -246,7 +250,9 @@ public final class MonitoredStatement implements Statement {
 
     @Override
     public ResultSet getGeneratedKeys() throws java.sql.SQLException {
-        return delegate.getGeneratedKeys();
+        ResultSet rs = delegate.getGeneratedKeys();
+        return new MonitoredResultSet(rs, monitor, "GENERATED_KEYS",
+            config.getHugeResultSetThreshold(), config.getHugeResultSetAction());
     }
 
     @Override
@@ -266,7 +272,9 @@ public final class MonitoredStatement implements Statement {
 
     @Override
     public ResultSet getResultSet() throws java.sql.SQLException {
-        return delegate.getResultSet();
+        ResultSet rs = delegate.getResultSet();
+        return new MonitoredResultSet(rs, monitor, "EXECUTE_RESULT",
+            config.getHugeResultSetThreshold(), config.getHugeResultSetAction());
     }
 
     @Override

@@ -9,4 +9,6 @@ public interface SqlExecutionListener {
     void onFailure(SqlExecutionContext context, long elapsedNanos, Throwable throwable);
 
     void onSlowQuery(SqlExecutionContext context, long elapsedMillis);
+
+    void onHugeRetSize(SqlExecutionContext context, int rowCount);
 }

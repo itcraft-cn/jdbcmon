@@ -15,6 +15,8 @@ public final class JdbcConsts {
 
     public static final String[] EXECUTE_METHOD_PREFIXES = {"execute", "update", "query", "batch"};
 
+    public static final int DEFAULT_HUGE_RESULTSET_THRESHOLD = 2000;
+
     private JdbcConsts() {
     }
 }

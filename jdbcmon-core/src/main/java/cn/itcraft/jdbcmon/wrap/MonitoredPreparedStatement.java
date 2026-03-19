@@ -1,5 +1,6 @@
 package cn.itcraft.jdbcmon.wrap;
 
+import cn.itcraft.jdbcmon.config.WrappedConfig;
 import cn.itcraft.jdbcmon.monitor.SqlMetrics;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 
@@ -31,12 +32,14 @@ public final class MonitoredPreparedStatement implements PreparedStatement {
     private final SqlMonitor monitor;
     private final String sql;
     private final SqlMetrics cachedMetrics;
+    private final WrappedConfig config;
 
-    public MonitoredPreparedStatement(PreparedStatement delegate, SqlMonitor monitor, String sql) {
+    public MonitoredPreparedStatement(PreparedStatement delegate, SqlMonitor monitor, String sql, WrappedConfig config) {
         this.delegate = delegate;
         this.monitor = monitor;
         this.sql = sql;
         this.cachedMetrics = monitor.getOrCreateMetrics(sql);
+        this.config = config;
     }
 
     // ========== 监控方法 ==========
@@ -60,7 +63,8 @@ public final class MonitoredPreparedStatement implements PreparedStatement {
         try {
             ResultSet rs = delegate.executeQuery();
             monitor.recordQueryFast(cachedMetrics, System.nanoTime() - start);
-            return rs;
+            return new MonitoredResultSet(rs, monitor, sql,
+                config.getHugeResultSetThreshold(), config.getHugeResultSetAction());
         } catch (java.sql.SQLException e) {
             monitor.recordErrorFast(cachedMetrics, System.nanoTime() - start, e);
             throw e;
@@ -157,7 +161,9 @@ public final class MonitoredPreparedStatement implements PreparedStatement {
 
     @Override
     public ResultSet getGeneratedKeys() throws java.sql.SQLException {
-        return delegate.getGeneratedKeys();
+        ResultSet rs = delegate.getGeneratedKeys();
+        return new MonitoredResultSet(rs, monitor, "GENERATED_KEYS",
+            config.getHugeResultSetThreshold(), config.getHugeResultSetAction());
     }
 
     @Override
@@ -187,7 +193,9 @@ public final class MonitoredPreparedStatement implements PreparedStatement {
 
     @Override
     public ResultSet getResultSet() throws java.sql.SQLException {
-        return delegate.getResultSet();
+        ResultSet rs = delegate.getResultSet();
+        return new MonitoredResultSet(rs, monitor, "EXECUTE_RESULT",
+            config.getHugeResultSetThreshold(), config.getHugeResultSetAction());
     }
 
     @Override
@@ -612,7 +620,8 @@ public final class MonitoredPreparedStatement implements PreparedStatement {
         try {
             ResultSet rs = delegate.executeQuery(sql);
             monitor.recordQuery(sql, System.nanoTime() - start);
-            return rs;
+            return new MonitoredResultSet(rs, monitor, sql,
+                config.getHugeResultSetThreshold(), config.getHugeResultSetAction());
         } catch (java.sql.SQLException e) {
             monitor.recordError(sql, System.nanoTime() - start, e);
             throw e;
