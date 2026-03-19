@@ -98,13 +98,5 @@
                 <jdk.classifier>jdk17</jdk.classifier>
             </properties>
         </profile>
-
-        <profile>
-            <id>jdk23</id>
-            <properties>
-                <maven.compiler.release>23</maven.compiler.release>
-                <jdk.classifier>jdk23</jdk.classifier>
-            </properties>
-        </profile>
     </profiles>
 </project>

@@ -29,9 +29,6 @@ public final class Platform {
     }
 
     public static AsyncExecutor createAsyncExecutor(ProxyConfig config) {
-        if (JVM_VERSION >= 23) {
-            return createVirtualThreadExecutor();
-        }
         return new PlatformThreadExecutor(config);
     }
 
@@ -67,16 +64,6 @@ public final class Platform {
             return Integer.parseInt(version);
         } catch (NumberFormatException e) {
             return 8;
-        }
-    }
-
-    private static AsyncExecutor createVirtualThreadExecutor() {
-        try {
-            Class<?> executorClass = Class.forName(
-                "cn.itcraft.jdbcmon.internal.VirtualThreadExecutor");
-            return (AsyncExecutor) executorClass.getDeclaredConstructor().newInstance();
-        } catch (Exception e) {
-            return new PlatformThreadExecutor(null);
         }
     }
 

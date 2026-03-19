@@ -24,9 +24,9 @@ jdbcmon 是一个高性能、可扩展的轻量级 JDBC 监控代理框架。
 
 **设计目标**：
 - 零侵入：无需修改业务代码
-- 高性能：Query 开销 < 2%，Update 开销 < 15%
+- 高性能：Query 开销 < 10%，Update 开销 < 15%
 - 可扩展：支持自定义监控指标
-- JDK兼容：8/17/23 多版本支持
+- JDK兼容：8/17 双版本支持
 
 ## 模块结构
 
@@ -34,8 +34,7 @@ jdbcmon 是一个高性能、可扩展的轻量级 JDBC 监控代理框架。
 jdbcmon/
 ├── jdbcmon-core/           # 核心模块
 │   ├── src/main/java/      # JDK 8 基础代码
-│   ├── src/main/java17/    # JDK 17+ 优化
-│   └── src/main/java23/    # JDK 23+ 优化
+│   └── src/main/java17/    # JDK 17+ 优化
 ├── jdbcmon-spring/         # Spring Boot 集成（需 JDK 17+）
 └── jdbcmon-test/           # 集成测试 & JMH 基准测试
 ```
@@ -73,7 +72,6 @@ mvn clean verify
 # 基准测试
 ./benchmark8.sh      # JDK 8
 ./benchmark17.sh     # JDK 17（推荐）
-./benchmark23.sh     # JDK 23
 ./benchmark_all.sh   # 所有版本
 ```
 
@@ -119,7 +117,7 @@ jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
 - LongAdder 替代 AtomicLong 实现高并发计数
 - 使用 ThreadLocal 复用对象（如 SqlExecutionContext）
 
-## 基准测试结果（JDK 17 推荐）
+## 基准测试结果
 
 ### JDK 8
 | 场景 | Direct | Proxied | 开销 |
@@ -130,7 +128,7 @@ jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
 | Update | 113,232 | 84,548 | **25%** |
 | Mixed 80/20 | 302,545 | 331,455 | **-9.5%** |
 
-### JDK 17（综合最优）
+### JDK 17（推荐）
 | 场景 | Direct | Proxied | 开销 |
 |------|--------|---------|------|
 | PreparedQuery | 1,969,363 | 1,878,606 | **4.6%** |
@@ -139,16 +137,6 @@ jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
 | Update | 565,425 | 539,450 | **4.6%** |
 | Mixed 80/20 | 1,052,542 | 1,072,243 | **-1.9%** |
 
-### JDK 23
-| 场景 | Direct | Proxied | 开销 |
-|------|--------|---------|------|
-| PreparedQuery | 1,626,318 | 1,458,259 | **10.3%** |
-| MultiRowQuery | 473,068 | 458,101 | **3.2%** |
-| Insert | 710,600 | 659,782 | **7.1%** |
-| Update | 407,264 | 332,624 | **18%** |
-| Mixed 80/20 | 1,078,278 | 1,072,087 | **-0.6%** |
-
 ### 结论
-- **JDK 17 综合最优**：吞吐量最高，代理开销最低且稳定
+- **JDK 17 推荐使用**：吞吐量最高，代理开销最低且稳定
 - JDK 8 Update 开销偏高（25%），但其他场景表现良好
-- JDK 23 性能介于 JDK 8 和 17 之间
