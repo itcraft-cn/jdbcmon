@@ -14,8 +14,9 @@ final class PlatformThreadExecutor implements AsyncExecutor {
     private volatile boolean shutdown = false;
 
     PlatformThreadExecutor(ProxyConfig config) {
-        int coreSize = config != null ? config.getCorePoolSize() : 2;
-        int maxSize = config != null ? config.getMaxPoolSize() : 4;
+        int cpuCores = Runtime.getRuntime().availableProcessors();
+        int coreSize = config != null ? config.getCorePoolSize() : Math.max(1, cpuCores / 2);
+        int maxSize = config != null ? config.getMaxPoolSize() : cpuCores;
         int queueCapacity = config != null ? config.getQueueCapacity() : 1000;
 
         this.executor = new ThreadPoolExecutor(

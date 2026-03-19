@@ -2,7 +2,7 @@ package cn.itcraft.jdbcmon.datasource;
 
 import cn.itcraft.jdbcmon.config.ProxyConfig;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
-import cn.itcraft.jdbcmon.proxy.wrapper.WrapperProxyFactory;
+import cn.itcraft.jdbcmon.wrap.WrapperProxyFactory;
 import cn.itcraft.jdbcmon.spi.JdbcProxyFactory;
 
 import java.io.PrintWriter;

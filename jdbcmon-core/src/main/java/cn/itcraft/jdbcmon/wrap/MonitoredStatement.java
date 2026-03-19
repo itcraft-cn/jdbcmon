@@ -1,4 +1,4 @@
-package cn.itcraft.jdbcmon.proxy.wrapper;
+package cn.itcraft.jdbcmon.wrap;
 
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 
