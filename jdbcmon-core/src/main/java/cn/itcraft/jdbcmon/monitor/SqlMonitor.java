@@ -334,6 +334,19 @@ public final class SqlMonitor {
         }
     }
 
+    public void recordResultSetSizeWithNotifyAfter(String sql, int rowCount, int threshold) {
+        if (sql == null || sql.isEmpty()) return;
+        
+        SqlMetrics metrics = metricsMap.get(sql);
+        if (metrics != null) {
+            metrics.addResultRows(rowCount);
+        }
+
+        if (rowCount >= threshold) {
+            notifyHugeResultSet(sql, rowCount);
+        }
+    }
+
     public void shutdown() {
         asyncExecutor.shutdown();
     }

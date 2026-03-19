@@ -1,7 +1,6 @@
 package cn.itcraft.jdbcmon.wrap;
 
 import cn.itcraft.jdbcmon.config.HugeResultSetAction;
-import cn.itcraft.jdbcmon.exception.HugeResultSetException;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 
 import java.io.InputStream;
@@ -27,42 +26,23 @@ import java.util.Map;
 
 public final class MonitoredResultSet implements ResultSet {
 
-    private final ResultSet delegate;
-    private final SqlMonitor monitor;
-    private final String sql;
-    private final int hugeResultSetThreshold;
-    private final HugeResultSetAction hugeResultSetAction;
-    
-    private int rowCount = 0;
-    private boolean closed = false;
-    private boolean hugeNotified = false;
+    private static final ResultSetMonitor NOOP = ResultSetMonitor.NOOP;
 
-    public MonitoredResultSet(ResultSet delegate, SqlMonitor monitor, String sql,
-            int hugeResultSetThreshold, HugeResultSetAction hugeResultSetAction) {
+    private final ResultSet delegate;
+    private final ResultSetMonitor monitor;
+    private boolean closed = false;
+
+    public MonitoredResultSet(ResultSet delegate, SqlMonitor sqlMonitor, String sql,
+            int threshold, HugeResultSetAction action) {
         this.delegate = delegate;
-        this.monitor = monitor;
-        this.sql = sql;
-        this.hugeResultSetThreshold = hugeResultSetThreshold;
-        this.hugeResultSetAction = hugeResultSetAction;
+        this.monitor = ResultSetMonitors.create(sqlMonitor, sql, threshold, action);
     }
 
     @Override
     public boolean next() throws java.sql.SQLException {
         boolean hasNext = delegate.next();
         if (hasNext) {
-            rowCount++;
-            if (!hugeNotified && rowCount >= hugeResultSetThreshold) {
-                hugeNotified = true;
-                switch (hugeResultSetAction) {
-                    case THROW_EXCEPTION:
-                        throw new HugeResultSetException(sql, rowCount, hugeResultSetThreshold);
-                    case NOTIFY_IMMEDIATE:
-                        monitor.notifyHugeResultSet(sql, rowCount);
-                        break;
-                    case NOTIFY_AFTER:
-                        break;
-                }
-            }
+            monitor.onRow();
         }
         return hasNext;
     }
@@ -70,7 +50,7 @@ public final class MonitoredResultSet implements ResultSet {
     @Override
     public void close() throws java.sql.SQLException {
         if (!closed) {
-            monitor.recordResultSetSize(sql, rowCount);
+            monitor.onClose();
             closed = true;
         }
         delegate.close();
@@ -129,11 +109,6 @@ public final class MonitoredResultSet implements ResultSet {
     @Override
     public double getDouble(int columnIndex) throws java.sql.SQLException {
         return delegate.getDouble(columnIndex);
-    }
-
-    @Override
-    public BigDecimal getBigDecimal(int columnIndex, int scale) throws java.sql.SQLException {
-        return delegate.getBigDecimal(columnIndex, scale);
     }
 
     @Override
@@ -209,11 +184,6 @@ public final class MonitoredResultSet implements ResultSet {
     @Override
     public double getDouble(String columnLabel) throws java.sql.SQLException {
         return delegate.getDouble(columnLabel);
-    }
-
-    @Override
-    public BigDecimal getBigDecimal(String columnLabel, int scale) throws java.sql.SQLException {
-        return delegate.getBigDecimal(columnLabel, scale);
     }
 
     @Override
@@ -307,6 +277,16 @@ public final class MonitoredResultSet implements ResultSet {
     }
 
     @Override
+    public BigDecimal getBigDecimal(int columnIndex, int scale) throws java.sql.SQLException {
+        return delegate.getBigDecimal(columnIndex, scale);
+    }
+
+    @Override
+    public BigDecimal getBigDecimal(String columnLabel, int scale) throws java.sql.SQLException {
+        return delegate.getBigDecimal(columnLabel, scale);
+    }
+
+    @Override
     public boolean isBeforeFirst() throws java.sql.SQLException {
         return delegate.isBeforeFirst();
     }
@@ -344,41 +324,6 @@ public final class MonitoredResultSet implements ResultSet {
     @Override
     public boolean last() throws java.sql.SQLException {
         return delegate.last();
-    }
-
-    @Override
-    public boolean absolute(int row) throws java.sql.SQLException {
-        return delegate.absolute(row);
-    }
-
-    @Override
-    public boolean relative(int rows) throws java.sql.SQLException {
-        return delegate.relative(rows);
-    }
-
-    @Override
-    public boolean previous() throws java.sql.SQLException {
-        return delegate.previous();
-    }
-
-    @Override
-    public void setFetchDirection(int direction) throws java.sql.SQLException {
-        delegate.setFetchDirection(direction);
-    }
-
-    @Override
-    public int getFetchDirection() throws java.sql.SQLException {
-        return delegate.getFetchDirection();
-    }
-
-    @Override
-    public void setFetchSize(int rows) throws java.sql.SQLException {
-        delegate.setFetchSize(rows);
-    }
-
-    @Override
-    public int getFetchSize() throws java.sql.SQLException {
-        return delegate.getFetchSize();
     }
 
     @Override
@@ -582,8 +527,8 @@ public final class MonitoredResultSet implements ResultSet {
     }
 
     @Override
-    public void updateCharacterStream(String columnLabel, Reader x, int length) throws java.sql.SQLException {
-        delegate.updateCharacterStream(columnLabel, x, length);
+    public void updateCharacterStream(String columnLabel, Reader reader, int length) throws java.sql.SQLException {
+        delegate.updateCharacterStream(columnLabel, reader, length);
     }
 
     @Override
@@ -717,12 +662,12 @@ public final class MonitoredResultSet implements ResultSet {
     }
 
     @Override
-    public java.net.URL getURL(int columnIndex) throws java.sql.SQLException {
+    public URL getURL(int columnIndex) throws java.sql.SQLException {
         return delegate.getURL(columnIndex);
     }
 
     @Override
-    public java.net.URL getURL(String columnLabel) throws java.sql.SQLException {
+    public URL getURL(String columnLabel) throws java.sql.SQLException {
         return delegate.getURL(columnLabel);
     }
 
@@ -880,8 +825,8 @@ public final class MonitoredResultSet implements ResultSet {
     }
 
     @Override
-    public void updateNCharacterStream(String columnLabel, Reader x, long length) throws java.sql.SQLException {
-        delegate.updateNCharacterStream(columnLabel, x, length);
+    public void updateNCharacterStream(String columnLabel, Reader reader, long length) throws java.sql.SQLException {
+        delegate.updateNCharacterStream(columnLabel, reader, length);
     }
 
     @Override
@@ -910,8 +855,8 @@ public final class MonitoredResultSet implements ResultSet {
     }
 
     @Override
-    public void updateCharacterStream(String columnLabel, Reader x, long length) throws java.sql.SQLException {
-        delegate.updateCharacterStream(columnLabel, x, length);
+    public void updateCharacterStream(String columnLabel, Reader reader, long length) throws java.sql.SQLException {
+        delegate.updateCharacterStream(columnLabel, reader, length);
     }
 
     @Override
@@ -950,8 +895,8 @@ public final class MonitoredResultSet implements ResultSet {
     }
 
     @Override
-    public void updateNCharacterStream(String columnLabel, Reader x) throws java.sql.SQLException {
-        delegate.updateNCharacterStream(columnLabel, x);
+    public void updateNCharacterStream(String columnLabel, Reader reader) throws java.sql.SQLException {
+        delegate.updateNCharacterStream(columnLabel, reader);
     }
 
     @Override
@@ -980,8 +925,8 @@ public final class MonitoredResultSet implements ResultSet {
     }
 
     @Override
-    public void updateCharacterStream(String columnLabel, Reader x) throws java.sql.SQLException {
-        delegate.updateCharacterStream(columnLabel, x);
+    public void updateCharacterStream(String columnLabel, Reader reader) throws java.sql.SQLException {
+        delegate.updateCharacterStream(columnLabel, reader);
     }
 
     @Override
@@ -1022,5 +967,60 @@ public final class MonitoredResultSet implements ResultSet {
     @Override
     public <T> T getObject(String columnLabel, Class<T> type) throws java.sql.SQLException {
         return delegate.getObject(columnLabel, type);
+    }
+
+    @Override
+    public void updateObject(int columnIndex, Object x, java.sql.SQLType targetSqlType, int scaleOrLength) throws java.sql.SQLException {
+        delegate.updateObject(columnIndex, x, targetSqlType, scaleOrLength);
+    }
+
+    @Override
+    public void updateObject(String columnLabel, Object x, java.sql.SQLType targetSqlType, int scaleOrLength) throws java.sql.SQLException {
+        delegate.updateObject(columnLabel, x, targetSqlType, scaleOrLength);
+    }
+
+    @Override
+    public void updateObject(int columnIndex, Object x, java.sql.SQLType targetSqlType) throws java.sql.SQLException {
+        delegate.updateObject(columnIndex, x, targetSqlType);
+    }
+
+    @Override
+    public void updateObject(String columnLabel, Object x, java.sql.SQLType targetSqlType) throws java.sql.SQLException {
+        delegate.updateObject(columnLabel, x, targetSqlType);
+    }
+
+    @Override
+    public boolean absolute(int row) throws java.sql.SQLException {
+        return delegate.absolute(row);
+    }
+
+    @Override
+    public boolean relative(int rows) throws java.sql.SQLException {
+        return delegate.relative(rows);
+    }
+
+    @Override
+    public boolean previous() throws java.sql.SQLException {
+        return delegate.previous();
+    }
+
+    @Override
+    public void setFetchDirection(int direction) throws java.sql.SQLException {
+        delegate.setFetchDirection(direction);
+    }
+
+    @Override
+    public int getFetchDirection() throws java.sql.SQLException {
+        return delegate.getFetchDirection();
+    }
+
+    @Override
+    public void setFetchSize(int rows) throws java.sql.SQLException {
+        delegate.setFetchSize(rows);
+    }
+
+    @Override
+    public int getFetchSize() throws java.sql.SQLException {
+        return delegate.getFetchSize();
     }
 }
