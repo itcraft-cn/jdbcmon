@@ -43,7 +43,7 @@ public class ResultSetBenchmark {
     private PreparedStatement directPreparedStatement;
     private PreparedStatement proxiedPreparedStatement;
 
-    @Param({"10", "100", "1000", "10000"})
+    @Param({"10000"})
     private int rowCount;
 
     @Setup(Level.Trial)
