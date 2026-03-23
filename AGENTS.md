@@ -61,6 +61,8 @@ mvn clean verify
 WrappedConfig config = new WrappedConfig.Builder()
     .metricsLevel(MetricsLevel.BASIC)  // BASIC/EXTENDED/FULL
     .slowQueryThresholdMs(1000)
+    .hugeResultSetThreshold(2000)      // 超大结果集阈值
+    .hugeResultSetAction(HugeResultSetAction.NOTIFY_IMMEDIATE)  // 触发行为
     .build();
 
 DataSource wrappedDataSource = new WrappedDataSource(targetDataSource, config);
@@ -77,12 +79,27 @@ jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
 │   ├── MonitoredConnection.java
 │   ├── MonitoredStatement.java
 │   ├── MonitoredPreparedStatement.java
-│   └── MonitoredCallableStatement.java
+│   ├── MonitoredCallableStatement.java
+│   ├── MonitoredResultSet.java       # ResultSet 包装（行数统计）
+│   ├── ResultSetMonitor.java         # ResultSet 监控策略接口
+│   ├── ResultSetMonitors.java        # 策略工厂
+│   ├── ThrowExceptionMonitor.java    # 抛异常策略
+│   ├── NotifyImmediateMonitor.java   # 立即通知策略
+│   └── NotifyAfterMonitor.java       # 延迟通知策略
+├── event/                    # 事件体系
+│   ├── EventType.java        # 事件类型枚举
+│   ├── MonEvent.java         # 事件接口
+│   ├── SuccessEvent.java     # 成功事件
+│   ├── FailureEvent.java     # 失败事件
+│   ├── SlowQueryEvent.java   # 慢查询事件
+│   └── HugeResultSetEvent.java # 超大结果集事件
 ├── thread/                   # 线程相关
 │   └── AsyncThreadExecutor.java
 ├── monitor/                  # 监控核心
 ├── listener/                 # 监听器接口（异步触发）
 ├── config/                   # 配置
+├── exception/                # 异常
+│   └── HugeResultSetException.java
 └── consts/                   # 常量
 ```
 
@@ -126,15 +143,22 @@ jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
 
 ### 交互规则
 
-1. 每次沟通产出文件后，均执行 git 提交
-2. git 仅以当前 `user.name` 提交，不推送到远端
-3. git 提交均遵循约定式提交规范（Conventional Commits）执行
+1. 所有交互均使用简体中文
+2. 每次沟通产出文件后，均执行 git 提交
+3. git 仅以当前 `user.name` 提交，不推送到远端
+4. git 提交均遵循约定式提交规范（Conventional Commits）执行
 
 ### 编码规范
 
-授权读取：/disk2/helly_data/code/markdown/self-ai-spec/spec.java.md
+授权读取：/disk2/helly_data/code/markdown/self-ai-spec/lang-spec/spec.java.md
 
-Read /disk2/helly_data/code/markdown/self-ai-spec/spec.java.md
+Read /disk2/helly_data/code/markdown/self-ai-spec/lang-spec/spec.java.md
+
+### 构建工具
+
+授权读取：/disk2/helly_data/code/markdown/self-ai-spec/lang-spec/ci.java.md
+
+Read /disk2/helly_data/code/markdown/self-ai-spec/lang-spec/ci.java.md
 
 ### 代码风格
 - 使用 final 修饰不可变字段和类
@@ -145,6 +169,7 @@ Read /disk2/helly_data/code/markdown/self-ai-spec/spec.java.md
 ### 性能要点
 - SqlMetrics 缓存在 PreparedStatement 中，避免 Map 查找
 - MetricsRecorder 策略模式：消除运行时级别检查
+- ResultSetMonitor 策略模式：消除 next() 热路径中的 switch 分支
 - 预计算阈值：slowQueryThresholdNanos 避免每次 TimeUnit 转换
 - LongAdder 替代 AtomicLong 实现高并发计数
 - 使用 ThreadLocal 复用对象（如 SqlExecutionContext）
