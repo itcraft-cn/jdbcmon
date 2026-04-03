@@ -10,7 +10,32 @@
     <packaging>pom</packaging>
 
     <name>jdbcmon</name>
-    <description>High-performance, extensible lightweight JDBC monitoring proxy framework</description>
+    <description>
+        High-performance, extensible lightweight JDBC monitoring proxy framework.
+        A zero-intrusion JDBC monitoring solution with low overhead (Query &lt; 10%, Update &lt; 15%),
+        supporting custom metrics, slow query detection, and huge result set monitoring.
+    </description>
+    <url>https://itcraft.cn/jdbcmon/</url>
+
+    <scm>
+        <connection>scm:git:git://github.com/itcraft-cn/jdbcmon.git</connection>
+        <developerConnection>scm:git:ssh://github.com/itcraft-cn/jdbcmon.git</developerConnection>
+        <url>https://github.com/itcraft-cn/jdbcmon/</url>
+    </scm>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Helly Guo</name>
+            <email>hellyguo@foxmail.com</email>
+        </developer>
+    </developers>
 
     <modules>
         <module>jdbcmon-core</module>
@@ -19,6 +44,12 @@
     </modules>
 
     <properties>
+        <plugin.compiler>3.11.0</plugin.compiler>
+        <plugin.surefire>3.2.2</plugin.surefire>
+        <plugin.source>3.2.1</plugin.source>
+        <plugin.javadoc>3.3.2</plugin.javadoc>
+        <plugin.gpg>1.5</plugin.gpg>
+        <plugin.publish>0.7.0</plugin.publish>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -41,18 +72,18 @@
                 <version>${slf4j.version}</version>
                 <scope>test</scope>
             </dependency>
-<dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-suite</artifactId>
-            <version>1.10.1</version>
-            <scope>test</scope>
-        </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-suite</artifactId>
+                <version>1.10.1</version>
+                <scope>test</scope>
+            </dependency>
             <dependency>
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
@@ -63,25 +94,77 @@
     </dependencyManagement>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.11.0</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.2.2</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.3.0</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${plugin.compiler}</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${plugin.surefire}</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${plugin.source}</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${plugin.javadoc}</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>${plugin.gpg}</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>${plugin.publish}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>maven-sonatype-central</publishingServerId>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
     <profiles>
