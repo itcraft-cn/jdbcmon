@@ -6,7 +6,7 @@
 
     <groupId>cn.itcraft</groupId>
     <artifactId>jdbcmon</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version><!-- managed by updgitver -->
     <packaging>pom</packaging>
 
     <name>jdbcmon</name>
@@ -25,8 +25,8 @@
 
     <licenses>
         <license>
-            <name>MIT License</name>
-            <url>https://opensource.org/licenses/MIT</url>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
 

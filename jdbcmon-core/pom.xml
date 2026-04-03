@@ -7,7 +7,7 @@
     <parent>
         <groupId>cn.itcraft</groupId>
         <artifactId>jdbcmon</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0</version><!-- managed by updgitver -->
     </parent>
 
     <artifactId>jdbcmon-core</artifactId>
