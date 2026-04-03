@@ -1,19 +1,21 @@
 # jdbcmon
 
-高性能、可扩展的轻量级 JDBC 监控代理框架。
+[中文版](README_cn.md)
 
-## 特性
+A high-performance, extensible lightweight JDBC monitoring proxy framework.
 
-- **零侵入**：无需修改业务代码，通过动态代理自动包装 JDBC 对象
-- **高性能**：Query 开销 < 10%，Update 开销 < 15%，功能测试场景完全适用
-- **可扩展**：监听器机制支持自定义监控指标，事件体系易于定制
-- **多 JDK 支持**：同时支持 JDK 8/17，JDK 17 性能更优
-- **自适应阈值**：基于 P95 动态计算慢 SQL 阈值
-- **大结果集检测**：支持阈值配置，多种触发策略（抛异常/立即通知/延迟通知）
+## Features
 
-## 快速开始
+- **Zero Intrusion**: No need to modify business code, automatically wraps JDBC objects via dynamic proxy
+- **High Performance**: Query overhead < 10%, Update overhead < 15%, suitable for functional testing scenarios
+- **Extensible**: Listener mechanism supports custom monitoring metrics, event system easy to customize
+- **Multi-JDK Support**: Supports both JDK 8/17, JDK 17 offers better performance
+- **Adaptive Threshold**: Dynamically calculates slow SQL threshold based on P95
+- **Huge ResultSet Detection**: Supports threshold configuration with multiple trigger strategies (throw exception / immediate notification / delayed notification)
 
-### Maven 依赖
+## Quick Start
+
+### Maven Dependency
 
 ```xml
 <dependency>
@@ -23,7 +25,7 @@
 </dependency>
 ```
 
-### 基本使用
+### Basic Usage
 
 ```java
 import cn.itcraft.jdbcmon.config.WrappedConfig;
@@ -43,28 +45,28 @@ WrappedConfig config = new WrappedConfig.Builder()
 DataSource wrappedDataSource = new WrappedDataSource(originalDataSource, config);
 
 SqlStatistics stats = wrappedDataSource.getSqlMonitor().getStatistics();
-System.out.println("总查询数: " + stats.getTotalQueries());
-System.out.println("慢查询数: " + stats.getTotalSlowQueries());
+System.out.println("Total queries: " + stats.getTotalQueries());
+System.out.println("Slow queries: " + stats.getTotalSlowQueries());
 ```
 
-## 多版本构建
+## Multi-Version Build
 
 ```bash
-# 构建 JDK 8 版本
+# Build JDK 8 version
 export JAVA_HOME=/home/helly/lang/jdk8
 mvn clean install -Pjdk8
 
-# 构建 JDK 17 版本（推荐）
+# Build JDK 17 version (recommended)
 export JAVA_HOME=/home/helly/lang/jdk17
 mvn clean install -Pjdk17
 
-# 或使用构建脚本
+# Or use build script
 ./build.sh
 ```
 
-## Spring Boot 集成
+## Spring Boot Integration
 
-### Maven 依赖
+### Maven Dependency
 
 ```xml
 <dependency>
@@ -74,7 +76,7 @@ mvn clean install -Pjdk17
 </dependency>
 ```
 
-### 配置属性
+### Configuration Properties
 
 ```yaml
 jdbcmon:
@@ -86,7 +88,7 @@ jdbcmon:
   huge-result-set-action: NOTIFY_IMMEDIATE
 ```
 
-## 监听器扩展
+## Listener Extension
 
 ```java
 import cn.itcraft.jdbcmon.listener.SqlExecutionListener;
@@ -103,19 +105,19 @@ public class CustomListener implements SqlExecutionListener {
         switch (event.getEventType()) {
             case SUCCESS:
                 SuccessEvent success = (SuccessEvent) event;
-                // 处理成功执行
+                // Handle successful execution
                 break;
             case FAILURE:
                 FailureEvent failure = (FailureEvent) event;
-                // 处理执行失败
+                // Handle execution failure
                 break;
             case SLOW_QUERY:
                 SlowQueryEvent slow = (SlowQueryEvent) event;
-                // 处理慢查询
+                // Handle slow query
                 break;
             case HUGE_RESULT_SET:
                 HugeResultSetEvent huge = (HugeResultSetEvent) event;
-                // 处理大结果集
+                // Handle huge result set
                 break;
         }
     }
@@ -124,58 +126,58 @@ public class CustomListener implements SqlExecutionListener {
 sqlMonitor.addListener(new CustomListener());
 ```
 
-## 性能基准
+## Performance Benchmarks
 
-### JDK 17（推荐）
+### JDK 17 (Recommended)
 
-| 场景 | Direct | Proxied | 开销 |
-|------|--------|---------|------|
+| Scenario | Direct | Proxied | Overhead |
+|----------|--------|---------|----------|
 | PreparedQuery | 1,802,693 ops/s | 1,744,145 ops/s | **3.2%** |
 | MultiRowQuery | 564,842 ops/s | 466,772 ops/s | **17.4%** |
 | Insert | 788,785 ops/s | 746,455 ops/s | **5.4%** |
 | Update | 551,891 ops/s | 541,953 ops/s | **1.8%** |
-| ResultSet (10000行) | 4,661 ops/s | 4,124 ops/s | **11.5%** |
+| ResultSet (10000 rows) | 4,661 ops/s | 4,124 ops/s | **11.5%** |
 
 ### JDK 8
 
-| 场景 | Direct | Proxied | 开销 |
-|------|--------|---------|------|
+| Scenario | Direct | Proxied | Overhead |
+|----------|--------|---------|----------|
 | PreparedQuery | 302,096 ops/s | 277,258 ops/s | **8.2%** |
 | MultiRowQuery | 153,412 ops/s | 153,909 ops/s | **-0.3%** |
 | Insert | 305,411 ops/s | 290,696 ops/s | **4.8%** |
-| ResultSet (10000行) | 4,477 ops/s | 4,040 ops/s | **9.8%** |
+| ResultSet (10000 rows) | 4,477 ops/s | 4,040 ops/s | **9.8%** |
 
-### 结论
+### Conclusions
 
-- **JDK 17 推荐使用**：吞吐量高（3-5倍于 JDK 8），代理开销稳定（1-12%）
-- **JDK 8 可用**：开销 1-10%，部分场景波动较大
-- **ResultSet 监控开销**：全量读取 10-12%，部分读取 < 5%
+- **JDK 17 Recommended**: High throughput (3-5x JDK 8), stable proxy overhead (1-12%)
+- **JDK 8 Usable**: 1-10% overhead, some scenarios show variance
+- **ResultSet Monitoring Overhead**: Full read 10-12%, partial read < 5%
 
-## 适用场景
+## Usage Scenarios
 
-| 场景 | 推荐度 | 说明 |
-|------|-------|------|
-| 功能测试 | ✅✅✅ | 完全适用，开销可忽略 |
-| 集成测试 | ✅✅✅ | 完全适用，便于发现问题 |
-| 预发布环境 | ✅✅ | 推荐使用，生产前验证 |
-| 生产环境 | ✅ | 可用，建议 JDK 17，开启必要监控 |
+| Scenario | Recommendation | Description |
+|----------|----------------|-------------|
+| Functional Testing | ✅✅✅ | Fully suitable, negligible overhead |
+| Integration Testing | ✅✅✅ | Fully suitable, helps identify issues |
+| Staging Environment | ✅✅ | Recommended for pre-production validation |
+| Production | ✅ | Usable, recommend JDK 17 with essential monitoring |
 
-## 核心价值
+## Core Value
 
-1. **零侵入** - 无需修改业务代码，透明接入
-2. **低开销** - Query < 10%，符合设计目标，功能测试场景完全适用
-3. **可观测** - 慢查询、大结果集、错误监控，全面覆盖
-4. **可扩展** - 策略模式 + 事件体系，易于定制
+1. **Zero Intrusion** - No business code modification required, transparent integration
+2. **Low Overhead** - Query < 10%, meets design goals, fully suitable for functional testing
+3. **Observable** - Slow queries, huge result sets, error monitoring, comprehensive coverage
+4. **Extensible** - Strategy pattern + event system, easy to customize
 
-## 模块结构
+## Module Structure
 
 ```
 jdbcmon/
-├── jdbcmon-core/           # 核心模块（JDK 8/17 双版本）
-├── jdbcmon-spring/         # Spring Boot 集成（需 JDK 17+）
-└── jdbcmon-test/           # 集成测试 & JMH 基准测试
+├── jdbcmon-core/           # Core module (JDK 8/17 dual versions)
+├── jdbcmon-spring/         # Spring Boot integration (requires JDK 17+)
+└── jdbcmon-test/           # Integration tests & JMH benchmarks
 ```
 
-## 许可证
+## License
 
 MIT License
