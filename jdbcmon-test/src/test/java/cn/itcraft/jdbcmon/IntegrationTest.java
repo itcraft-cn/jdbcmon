@@ -47,6 +47,7 @@ class IntegrationTest {
             .slowQueryThresholdMs(500)
             .logSlowQueries(true)
             .useAdaptiveThreshold(true)
+            .sampleRatePercent(100)
             .build();
 
         wrappedDataSource = new WrappedDataSource(h2DataSource, config);
@@ -240,6 +241,7 @@ class IntegrationTest {
             .enableLogging(false)
             .hugeResultSetThreshold(5)
             .hugeResultSetAction(HugeResultSetAction.NOTIFY_IMMEDIATE)
+            .sampleRatePercent(100)
             .build();
         
         JdbcDataSource h2DataSource = new JdbcDataSource();
@@ -281,6 +283,7 @@ class IntegrationTest {
         WrappedConfig throwConfig = new WrappedConfig.Builder()
             .hugeResultSetThreshold(100)
             .hugeResultSetAction(HugeResultSetAction.THROW_EXCEPTION)
+            .sampleRatePercent(100)
             .build();
 
         JdbcDataSource h2DataSource = new JdbcDataSource();

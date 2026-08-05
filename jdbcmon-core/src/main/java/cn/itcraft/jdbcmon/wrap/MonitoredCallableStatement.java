@@ -49,6 +49,9 @@ public final class MonitoredCallableStatement implements CallableStatement {
 
     @Override
     public boolean execute() throws java.sql.SQLException {
+        if (!config.shouldSample()) {
+            return delegate.execute();
+        }
         long start = System.nanoTime();
         try {
             boolean result = delegate.execute();
@@ -62,6 +65,9 @@ public final class MonitoredCallableStatement implements CallableStatement {
 
     @Override
     public ResultSet executeQuery() throws java.sql.SQLException {
+        if (!config.shouldSample()) {
+            return delegate.executeQuery();
+        }
         long start = System.nanoTime();
         try {
             ResultSet rs = delegate.executeQuery();
@@ -76,6 +82,9 @@ public final class MonitoredCallableStatement implements CallableStatement {
 
     @Override
     public int executeUpdate() throws java.sql.SQLException {
+        if (!config.shouldSample()) {
+            return delegate.executeUpdate();
+        }
         long start = System.nanoTime();
         try {
             int rows = delegate.executeUpdate();
@@ -89,6 +98,9 @@ public final class MonitoredCallableStatement implements CallableStatement {
 
     @Override
     public int[] executeBatch() throws java.sql.SQLException {
+        if (!config.shouldSample()) {
+            return delegate.executeBatch();
+        }
         long start = System.nanoTime();
         try {
             int[] rows = delegate.executeBatch();

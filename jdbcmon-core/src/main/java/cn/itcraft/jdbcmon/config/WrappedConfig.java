@@ -2,6 +2,7 @@ package cn.itcraft.jdbcmon.config;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 
 import static cn.itcraft.jdbcmon.consts.JdbcConsts.*;
@@ -11,6 +12,8 @@ public final class WrappedConfig {
     private MetricsLevel metricsLevel = MetricsLevel.BASIC;
     
     private boolean enableMonitoring = true;
+    private int sampleRatePercent = 1;
+    private boolean sampleAlways = false;
     private long slowQueryThresholdMs = DEFAULT_SLOW_QUERY_THRESHOLD_MS;
     private boolean logSlowQueries = true;
     private boolean collectStackTrace = false;
@@ -138,6 +141,14 @@ public final class WrappedConfig {
 
     public HugeResultSetAction getHugeResultSetAction() {
         return hugeResultSetAction;
+    }
+
+    public int getSampleRatePercent() {
+        return sampleRatePercent;
+    }
+
+    public boolean shouldSample() {
+        return sampleAlways || ThreadLocalRandom.current().nextInt(100) < sampleRatePercent;
     }
 
     public boolean shouldFilter(String sql) {
@@ -279,6 +290,15 @@ public final class WrappedConfig {
 
         public Builder hugeResultSetAction(HugeResultSetAction action) {
             config.hugeResultSetAction = action;
+            return this;
+        }
+
+        public Builder sampleRatePercent(int percent) {
+            if (percent < 1 || percent > 100) {
+                throw new IllegalArgumentException("sampleRatePercent must be between 1 and 100");
+            }
+            config.sampleRatePercent = percent;
+            config.sampleAlways = (percent == 100);
             return this;
         }
 
