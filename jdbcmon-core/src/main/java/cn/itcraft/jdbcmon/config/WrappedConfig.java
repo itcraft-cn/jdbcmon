@@ -12,7 +12,7 @@ public final class WrappedConfig {
     private MetricsLevel metricsLevel = MetricsLevel.BASIC;
     
     private boolean enableMonitoring = true;
-    private int sampleRatePercent = 1;
+    private int sampleRate = 100;
     private boolean sampleAlways = false;
     private long slowQueryThresholdMs = DEFAULT_SLOW_QUERY_THRESHOLD_MS;
     private boolean logSlowQueries = true;
@@ -143,12 +143,12 @@ public final class WrappedConfig {
         return hugeResultSetAction;
     }
 
-    public int getSampleRatePercent() {
-        return sampleRatePercent;
+    public int getSampleRate() {
+        return sampleRate;
     }
 
     public boolean shouldSample() {
-        return sampleAlways || ThreadLocalRandom.current().nextInt(100) < sampleRatePercent;
+        return sampleAlways || ThreadLocalRandom.current().nextInt(10000) < sampleRate;
     }
 
     public boolean shouldFilter(String sql) {
@@ -293,12 +293,12 @@ public final class WrappedConfig {
             return this;
         }
 
-        public Builder sampleRatePercent(int percent) {
-            if (percent < 1 || percent > 100) {
-                throw new IllegalArgumentException("sampleRatePercent must be between 1 and 100");
+        public Builder sampleRate(int rate) {
+            if (rate < 1 || rate > 10000) {
+                throw new IllegalArgumentException("sampleRate must be between 1 and 10000");
             }
-            config.sampleRatePercent = percent;
-            config.sampleAlways = (percent == 100);
+            config.sampleRate = rate;
+            config.sampleAlways = (rate == 10000);
             return this;
         }
 

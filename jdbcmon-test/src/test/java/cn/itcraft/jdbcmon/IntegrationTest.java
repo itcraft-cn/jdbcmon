@@ -47,7 +47,7 @@ class IntegrationTest {
             .slowQueryThresholdMs(500)
             .logSlowQueries(true)
             .useAdaptiveThreshold(true)
-            .sampleRatePercent(100)
+            .sampleRate(10000)
             .build();
 
         wrappedDataSource = new WrappedDataSource(h2DataSource, config);
@@ -241,7 +241,7 @@ class IntegrationTest {
             .enableLogging(false)
             .hugeResultSetThreshold(5)
             .hugeResultSetAction(HugeResultSetAction.NOTIFY_IMMEDIATE)
-            .sampleRatePercent(100)
+            .sampleRate(10000)
             .build();
         
         JdbcDataSource h2DataSource = new JdbcDataSource();
@@ -283,7 +283,7 @@ class IntegrationTest {
         WrappedConfig throwConfig = new WrappedConfig.Builder()
             .hugeResultSetThreshold(100)
             .hugeResultSetAction(HugeResultSetAction.THROW_EXCEPTION)
-            .sampleRatePercent(100)
+            .sampleRate(10000)
             .build();
 
         JdbcDataSource h2DataSource = new JdbcDataSource();
@@ -319,7 +319,7 @@ class IntegrationTest {
     @DisplayName("test_sampleRate_1Percent_partialMonitoring")
     void test_sampleRate_1Percent_partialMonitoring() throws Exception {
         WrappedConfig onePercentConfig = new WrappedConfig.Builder()
-            .sampleRatePercent(1)
+            .sampleRate(100)
             .build();
 
         JdbcDataSource h2DataSource = new JdbcDataSource();
@@ -346,10 +346,10 @@ class IntegrationTest {
             double ratio = (double) totalQueries / executions;
             
             assertTrue(totalQueries < executions, 
-                "With 1% sampling, monitored count should be less than total executions. " +
+                "With sampleRate=100 (1%), monitored count should be less than total executions. " +
                 "Total: " + executions + ", Monitored: " + totalQueries);
             assertTrue(totalQueries > executions * 0.005, 
-                "With 1% sampling, should monitor at least 0.5% of queries. " +
+                "With sampleRate=100 (1%), should monitor at least 0.5% of queries. " +
                 "Total: " + executions + ", Monitored: " + totalQueries + ", Ratio: " + ratio);
         } finally {
             sampleDataSource.shutdown();
@@ -360,7 +360,7 @@ class IntegrationTest {
     @DisplayName("test_sampleRate_100Percent_fullMonitoring")
     void test_sampleRate_100Percent_fullMonitoring() throws Exception {
         WrappedConfig fullConfig = new WrappedConfig.Builder()
-            .sampleRatePercent(100)
+            .sampleRate(10000)
             .build();
 
         JdbcDataSource h2DataSource = new JdbcDataSource();
@@ -389,7 +389,7 @@ class IntegrationTest {
             SqlStatistics stats = monitor.getStatistics();
             
             assertEquals(executions, stats.getTotalUpdates(), 
-                "With 100% sampling, all queries should be monitored");
+                "With sampleRate=10000 (100%), all queries should be monitored");
         } finally {
             fullSampleDataSource.shutdown();
         }
@@ -399,7 +399,7 @@ class IntegrationTest {
     @DisplayName("test_sampleRate_probabilistic")
     void test_sampleRate_probabilistic() throws Exception {
         WrappedConfig fiftyConfig = new WrappedConfig.Builder()
-            .sampleRatePercent(50)
+            .sampleRate(5000)
             .build();
 
         JdbcDataSource h2DataSource = new JdbcDataSource();
@@ -426,7 +426,7 @@ class IntegrationTest {
             double ratio = (double) monitoredCount / executions;
             
             assertTrue(ratio > 0.4 && ratio < 0.6, 
-                "With 50% sampling, monitored ratio should be around 0.5, got: " + ratio +
+                "With sampleRate=5000 (50%), monitored ratio should be around 0.5, got: " + ratio +
                 ", monitored: " + monitoredCount + ", total: " + executions);
         } finally {
             probDataSource.shutdown();
