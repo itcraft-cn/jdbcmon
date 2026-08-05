@@ -12,6 +12,16 @@ public final class WrappedConfig {
     private MetricsLevel metricsLevel = MetricsLevel.BASIC;
     
     private boolean enableMonitoring = true;
+    
+    /**
+     * 采样率（万分比）
+     * <ul>
+     *   <li>范围: 1 - 10000</li>
+     *   <li>1 = 0.01%（万分之一）</li>
+     *   <li>100 = 1%（默认值）</li>
+     *   <li>10000 = 100%（全量采集）</li>
+     * </ul>
+     */
     private int sampleRate = 100;
     private boolean sampleAlways = false;
     private long slowQueryThresholdMs = DEFAULT_SLOW_QUERY_THRESHOLD_MS;
@@ -147,6 +157,17 @@ public final class WrappedConfig {
         return sampleRate;
     }
 
+    /**
+     * 判断当前请求是否需要采样
+     * <p>
+     * 采样逻辑：
+     * <ul>
+     *   <li>sampleRate = 10000 时，直接返回 true（优化：避免随机数生成）</li>
+     *   <li>其他值时，使用 ThreadLocalRandom 生成 [0, 10000) 随机数，判断是否小于 sampleRate</li>
+     * </ul>
+     * 
+     * @return true 表示需要采样，false 表示跳过监控
+     */
     public boolean shouldSample() {
         return sampleAlways || ThreadLocalRandom.current().nextInt(10000) < sampleRate;
     }
@@ -293,6 +314,18 @@ public final class WrappedConfig {
             return this;
         }
 
+        /**
+         * 设置采样率（万分比）
+         * 
+         * @param rate 采样率，范围 1-10000
+         *             <ul>
+         *               <li>1 = 0.01%（万分之一）</li>
+         *               <li>100 = 1%（默认值）</li>
+         *               <li>10000 = 100%（全量采集）</li>
+         *             </ul>
+         * @return this
+         * @throws IllegalArgumentException 如果 rate 不在 [1, 10000] 范围内
+         */
         public Builder sampleRate(int rate) {
             if (rate < 1 || rate > 10000) {
                 throw new IllegalArgumentException("sampleRate must be between 1 and 10000");
