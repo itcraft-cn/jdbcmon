@@ -7,6 +7,28 @@ import java.util.regex.Pattern;
 
 import static cn.itcraft.jdbcmon.consts.JdbcConsts.*;
 
+/**
+ * JDBC 监控配置
+ * <p>
+ * 使用 Builder 模式构建不可变配置对象：
+ * <pre>{@code
+ * WrappedConfig config = new WrappedConfig.Builder()
+ *     .sampleRate(10000)              // 全量采样
+ *     .slowQueryThresholdMs(1000)     // 慢查询阈值 1秒
+ *     .build();
+ * }</pre>
+ * 
+ * <h3>核心配置项</h3>
+ * <ul>
+ *   <li>sampleRate: 采样率（万分比），默认 100（1%）</li>
+ *   <li>slowQueryThresholdMs: 慢查询阈值，默认 1000ms</li>
+ *   <li>metricsLevel: 监控级别，默认 BASIC</li>
+ *   <li>hugeResultSetThreshold: 超大结果集阈值，默认 1000 行</li>
+ * </ul>
+ * 
+ * @see WrappedDataSourceBuilder
+ * @see MetricsLevel
+ */
 public final class WrappedConfig {
 
     private MetricsLevel metricsLevel = MetricsLevel.BASIC;

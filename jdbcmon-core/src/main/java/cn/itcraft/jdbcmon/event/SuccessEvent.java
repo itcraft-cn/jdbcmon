@@ -2,6 +2,9 @@ package cn.itcraft.jdbcmon.event;
 
 import cn.itcraft.jdbcmon.core.SqlExecutionContext;
 
+/**
+ * SQL 执行成功事件
+ */
 public final class SuccessEvent extends AbstractMonEvent {
 
     private final Object result;

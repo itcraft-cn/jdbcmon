@@ -26,6 +26,20 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 
+/**
+ * 监控代理 PreparedStatement
+ * <p>
+ * 包装目标 PreparedStatement，拦截执行方法，记录 SQL 指标。
+ * <p>
+ * <h3>性能优化</h3>
+ * <ul>
+ *   <li>缓存 SqlMetrics：避免每次执行时从 Map 查找指标对象</li>
+ *   <li>预编译 SQL 已知：直接使用缓存指标，无需重复计算 Key</li>
+ * </ul>
+ * 
+ * @see MonitoredStatement
+ * @see MonitoredCallableStatement
+ */
 public final class MonitoredPreparedStatement implements PreparedStatement {
 
     private final PreparedStatement delegate;

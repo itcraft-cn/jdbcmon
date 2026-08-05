@@ -4,6 +4,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * SQL 监控统计数据快照
+ * <p>
+ * 从 {@link SqlMonitor} 获取的不可变统计快照，用于外部监控和展示。
+ * <p>
+ * <h3>数据来源</h3>
+ * <ul>
+ *   <li>totalQueries: 查询语句执行总数</li>
+ *   <li>totalUpdates: 更新语句执行总数</li>
+ *   <li>totalBatchOps: 批量操作执行总数</li>
+ *   <li>totalErrors: 错误总数</li>
+ *   <li>totalSlowQueries: 慢查询总数</li>
+ *   <li>slowQueries: TOP N 慢查询列表（按最大耗时排序）</li>
+ *   <li>metricsMap: 所有 SQL 的详细指标映射</li>
+ * </ul>
+ * 
+ * @see SqlMonitor#getStatistics()
+ */
 public final class SqlStatistics {
 
     private long totalQueries;

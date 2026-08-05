@@ -7,6 +7,27 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+/**
+ * 监控代理 Statement
+ * <p>
+ * 包装目标 Statement，拦截 execute/update/query 方法调用，记录执行指标。
+ * <p>
+ * <h3>采样机制</h3>
+ * <ul>
+ *   <li>调用前检查 {@link WrappedConfig#shouldSample()}</li>
+ *   <li>命中采样：委托给 execute0/update0 方法执行监控逻辑</li>
+ *   <li>未命中：直接调用目标 Statement，零开销</li>
+ * </ul>
+ * 
+ * <h3>性能优化</h3>
+ * <ul>
+ *   <li>提取私有方法（execute0/update0）：减少方法体大小，便于 JIT 优化</li>
+ *   <li>采样检查前置：避免不必要的监控开销</li>
+ * </ul>
+ * 
+ * @see MonitoredPreparedStatement
+ * @see MonitoredCallableStatement
+ */
 public final class MonitoredStatement implements Statement {
 
     private final Statement delegate;

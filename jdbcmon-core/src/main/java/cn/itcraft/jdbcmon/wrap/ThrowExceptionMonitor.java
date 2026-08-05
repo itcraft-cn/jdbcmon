@@ -4,6 +4,11 @@ import cn.itcraft.jdbcmon.exception.HugeResultSetException;
 
 import java.sql.SQLException;
 
+/**
+ * 超大结果集异常策略
+ * 
+ * 超过阈值时抛出 HugeResultSetException，中断查询。
+ */
 final class ThrowExceptionMonitor implements ResultSetMonitor {
 
     private final String sql;

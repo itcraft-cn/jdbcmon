@@ -24,6 +24,19 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
 
+/**
+ * 监控代理 ResultSet
+ * 
+ * 包装目标 ResultSet，在 next() 时统计行数，支持超大结果集检测。
+ * 
+ * 性能优化：
+ * - 策略模式：通过 ResultSetMonitor 接口消除热路径 switch 分支
+ * - NOOP 优化：未配置阈值时使用零开销实例
+ * - 延迟通知：NotifyAfterMonitor 在 close() 时统一通知
+ * 
+ * @see ResultSetMonitor
+ * @see ResultSetMonitors
+ */
 public final class MonitoredResultSet implements ResultSet {
 
     private static final ResultSetMonitor NOOP = ResultSetMonitor.NOOP;

@@ -4,6 +4,11 @@ import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 
 import java.sql.SQLException;
 
+/**
+ * 超大结果集延迟通知策略
+ * 
+ * 在 ResultSet.close() 时触发 HugeResultSetEvent（如果超阈值）。
+ */
 final class NotifyAfterMonitor implements ResultSetMonitor {
 
     private final SqlMonitor monitor;

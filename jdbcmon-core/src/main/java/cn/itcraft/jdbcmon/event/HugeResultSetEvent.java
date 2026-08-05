@@ -2,6 +2,9 @@ package cn.itcraft.jdbcmon.event;
 
 import cn.itcraft.jdbcmon.core.SqlExecutionContext;
 
+/**
+ * 超大结果集事件
+ */
 public final class HugeResultSetEvent extends AbstractMonEvent {
 
     private final int rowCount;

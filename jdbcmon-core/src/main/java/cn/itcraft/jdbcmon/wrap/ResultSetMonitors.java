@@ -3,6 +3,11 @@ package cn.itcraft.jdbcmon.wrap;
 import cn.itcraft.jdbcmon.config.HugeResultSetAction;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 
+/**
+ * ResultSetMonitor 策略工厂
+ * 
+ * 根据 HugeResultSetAction 创建对应的监控策略实例。
+ */
 final class ResultSetMonitors {
 
     private ResultSetMonitors() {}

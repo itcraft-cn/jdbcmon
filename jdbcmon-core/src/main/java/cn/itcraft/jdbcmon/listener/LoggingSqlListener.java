@@ -5,6 +5,9 @@ import cn.itcraft.jdbcmon.event.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 日志监听器（默认实现）
+ */
 public final class LoggingSqlListener implements SqlExecutionListener {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingSqlListener.class);

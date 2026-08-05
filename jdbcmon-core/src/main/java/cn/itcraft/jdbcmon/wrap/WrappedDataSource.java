@@ -12,6 +12,36 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.sql.DataSource;
 
+/**
+ * 监控代理 DataSource
+ * <p>
+ * 包装目标 DataSource，返回监控代理 Connection，实现对 JDBC 调用的透明监控。
+ * <p>
+ * <h3>使用示例</h3>
+ * <pre>{@code
+ * DataSource originalDataSource = ...;
+ * WrappedConfig config = new WrappedConfig.Builder()
+ *     .sampleRate(10000)  // 全量采样
+ *     .build();
+ * 
+ * DataSource monitoredDataSource = new WrappedDataSource(originalDataSource, config);
+ * 
+ * // 使用方式与原始 DataSource 完全相同
+ * try (Connection conn = monitoredDataSource.getConnection()) {
+ *     // 所有 JDBC 操作自动被监控
+ * }
+ * }</pre>
+ * 
+ * <h3>设计特点</h3>
+ * <ul>
+ *   <li>零侵入：业务代码无需修改</li>
+ *   <li>透明代理：完全实现 DataSource 接口</li>
+ *   <li>可配置：支持采样率、慢查询阈值等配置</li>
+ * </ul>
+ * 
+ * @see WrappedConfig
+ * @see SqlMonitor
+ */
 public final class WrappedDataSource implements DataSource {
 
     private final DataSource target;

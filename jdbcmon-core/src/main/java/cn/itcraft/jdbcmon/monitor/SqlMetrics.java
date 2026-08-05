@@ -5,6 +5,24 @@ import cn.itcraft.jdbcmon.config.MetricsLevel;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
+/**
+ * 单条 SQL 的执行指标
+ * <p>
+ * 存储单个 SQL 语句的执行统计信息，使用原子类型保证线程安全。
+ * <p>
+ * <h3>线程安全</h3>
+ * <ul>
+ *   <li>计数器使用 LongAdder（高并发场景优于 AtomicLong）</li>
+ *   <li>min/max 使用 AtomicLong + CAS 循环（写少读多场景）</li>
+ *   <li>直方图使用 LongAdder 数组</li>
+ * </ul>
+ * 
+ * <h3>性能优化</h3>
+ * <ul>
+ *   <li>包级别可见方法（addExecutionCount 等）避免外部调用开销</li>
+ *   <li>直方图边界预计算，避免运行时计算</li>
+ * </ul>
+ */
 public final class SqlMetrics {
 
     private final String sqlKey;

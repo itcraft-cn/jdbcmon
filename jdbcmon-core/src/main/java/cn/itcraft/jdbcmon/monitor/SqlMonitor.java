@@ -21,6 +21,37 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
+/**
+ * SQL 监控核心类
+ * <p>
+ * 负责采集、存储、统计 SQL 执行指标，并通过异步事件机制通知监听器。
+ * <p>
+ * <h3>核心职责</h3>
+ * <ul>
+ *   <li>指标采集：记录 SQL 执行次数、耗时、错误等指标</li>
+ *   <li>慢查询检测：检测超阈值查询，触发告警</li>
+ *   <li>事件发布：异步通知监听器（如日志记录）</li>
+ *   <li>统计查询：提供实时统计信息</li>
+ * </ul>
+ * 
+ * <h3>线程安全</h3>
+ * <ul>
+ *   <li>使用 LongAdder 实现高并发计数</li>
+ *   <li>使用 ConcurrentHashMap 存储 SQL 指标</li>
+ *   <li>事件发布使用异步线程池，避免阻塞业务线程</li>
+ * </ul>
+ * 
+ * <h3>性能优化</h3>
+ * <ul>
+ *   <li>策略模式：根据 MetricsLevel 选择不同 Recorder 实现</li>
+ *   <li>预计算：slowQueryThresholdNanos 避免 TimeUnit 转换</li>
+ *   <li>异步化：事件通知不阻塞 SQL 执行</li>
+ * </ul>
+ * 
+ * @see SqlMetrics
+ * @see SqlStatistics
+ * @see MetricsRecorder
+ */
 public final class SqlMonitor {
 
     private static final Logger log = LoggerFactory.getLogger(SqlMonitor.class);

@@ -5,6 +5,9 @@ import cn.itcraft.jdbcmon.event.MonEvent;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * 组合监听器（支持多个监听器）
+ */
 public final class CompositeSqlListener implements SqlExecutionListener {
 
     private final List<SqlExecutionListener> listeners = new CopyOnWriteArrayList<>();
