@@ -15,9 +15,25 @@ jdbcmon 是一个高性能、可扩展的轻量级 JDBC 监控代理框架。
 ```
 jdbcmon/
 ├── jdbcmon-core/           # 核心模块（JDK 8 兼容，JDK 17 性能更优）
+├── jdbcmon-driver/         # Driver/URL 代理接入（模式2：jdbc:jdbcmon: 前缀）
 ├── jdbcmon-spring/         # Spring Boot 集成（需 JDK 17+）
 └── jdbcmon-test/           # 集成测试 & JMH 基准测试
 ```
+
+## 接入方式（三种模式）
+
+监控引擎与交付层分离，同一套引擎支持三种接入方式：
+
+| 模式 | 载体 | 方式 | 侵入性 |
+|------|------|------|--------|
+| 模式1 显式包装 | jdbcmon-core / jdbcmon-spring | `new WrappedDataSource(target, config)` 或 Spring starter | 需改代码或加依赖 |
+| 模式2 Driver/URL 代理 | jdbcmon-driver | URL 加前缀 `jdbc:jdbcmon:` 或指定 `JdbcMonDriver` | 零代码，改配置 |
+| 模式3 javaagent | jdbcmon-agent（规划中） | `-javaagent` | 零 |
+
+要点（模式2）：
+- `JdbcMonDriver` 通过 SPI（`META-INF/services/java.sql.Driver`）+ 静态块 `registerDriver` 完成注册（SPI 仅触发类加载，注册依赖静态块）
+- 配置来源：classpath `jdbcmon.properties` > 系统属性 `jdbcmon.*` > 默认；入口 `JdbcMonDriverConfig`
+- 幂等：已是 `MonitoredConnection` 不再重复包装
 
 ## 构建、测试、检查命令
 

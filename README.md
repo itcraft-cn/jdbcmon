@@ -49,6 +49,43 @@ System.out.println("Total queries: " + stats.getTotalQueries());
 System.out.println("Slow queries: " + stats.getTotalSlowQueries());
 ```
 
+## Integration Modes
+
+The monitoring engine is decoupled from the delivery layer, so the same engine supports three integration modes.
+
+| Mode | Approach | Intrusiveness | Use Case |
+|------|----------|---------------|----------|
+| Mode 1 Explicit wrapping | `new WrappedDataSource(target, config)` / Spring Starter | Code change or dependency | Full control, unit and integration testing |
+| Mode 2 Driver/URL proxy | Prefix the JDBC URL with `jdbc:jdbcmon:` | Zero code, config only | When code changes are not possible; connection pool config |
+| Mode 3 javaagent | `-javaagent:jdbcmon-agent.jar` (planned) | Zero | Covering internally created data sources |
+
+### Mode 2: Driver/URL proxy
+
+Add the `jdbcmon-driver` dependency and prefix the JDBC URL:
+
+```
+Original URL : jdbc:mysql://host:3306/db
+Proxied  URL : jdbc:jdbcmon:mysql://host:3306/db
+```
+
+HikariCP example (properties):
+
+```properties
+spring.datasource.driver-class-name=cn.itcraft.jdbcmon.driver.JdbcMonDriver
+spring.datasource.url=jdbc:jdbcmon:mysql://host:3306/db
+```
+
+Optional configuration, resolved with the priority classpath `jdbcmon.properties` > system property `jdbcmon.*` > built-in defaults:
+
+```properties
+jdbcmon.sampleRate=10000
+jdbcmon.slowQueryThresholdMs=1000
+jdbcmon.hugeResultSetThreshold=2000
+jdbcmon.hugeResultSetAction=NOTIFY_IMMEDIATE
+```
+
+Note: sampling defaults to 100 basis points (1%); set `jdbcmon.sampleRate=10000` for full capture.
+
 ## Multi-Version Build
 
 ```bash
@@ -174,6 +211,7 @@ sqlMonitor.addListener(new CustomListener());
 ```
 jdbcmon/
 ├── jdbcmon-core/           # Core module (JDK 8/17 dual versions)
+├── jdbcmon-driver/         # Driver/URL proxy integration (Mode 2)
 ├── jdbcmon-spring/         # Spring Boot integration (requires JDK 17+)
 └── jdbcmon-test/           # Integration tests & JMH benchmarks
 ```

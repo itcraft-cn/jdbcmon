@@ -49,6 +49,43 @@ System.out.println("总查询数: " + stats.getTotalQueries());
 System.out.println("慢查询数: " + stats.getTotalSlowQueries());
 ```
 
+## 接入方式（三种模式）
+
+监控引擎与交付层分离，同一套引擎支持三种接入方式，可按场景选择或组合。
+
+| 模式 | 方式 | 侵入性 | 适用场景 |
+|------|------|--------|----------|
+| 模式1 显式包装 | `new WrappedDataSource(target, config)` / Spring Starter | 需改代码或加依赖 | 完全掌控、单元与集成测试 |
+| 模式2 Driver/URL 代理 | JDBC URL 加 `jdbc:jdbcmon:` 前缀 | 零代码，仅改配置 | 不便改代码、连接池配置接入 |
+| 模式3 javaagent | `-javaagent:jdbcmon-agent.jar`（规划中） | 零 | 需覆盖框架内部创建的数据源 |
+
+### 模式2：Driver/URL 代理
+
+引入 `jdbcmon-driver` 依赖后，仅需在 JDBC URL 前追加前缀：
+
+```
+原始 URL：jdbc:mysql://host:3306/db
+代理 URL：jdbc:jdbcmon:mysql://host:3306/db
+```
+
+连接池以 HikariCP 为例（properties）：
+
+```properties
+spring.datasource.driver-class-name=cn.itcraft.jdbcmon.driver.JdbcMonDriver
+spring.datasource.url=jdbc:jdbcmon:mysql://host:3306/db
+```
+
+可选配置项，来源优先级为 classpath 下 `jdbcmon.properties` > 系统属性 `jdbcmon.*` > 内置默认值：
+
+```properties
+jdbcmon.sampleRate=10000
+jdbcmon.slowQueryThresholdMs=1000
+jdbcmon.hugeResultSetThreshold=2000
+jdbcmon.hugeResultSetAction=NOTIFY_IMMEDIATE
+```
+
+提示：采样默认万分比 100（1%），全量采集请显式设置 `jdbcmon.sampleRate=10000`。
+
 ## 多版本构建
 
 ```bash
@@ -174,6 +211,7 @@ sqlMonitor.addListener(new CustomListener());
 ```
 jdbcmon/
 ├── jdbcmon-core/           # 核心模块（JDK 8/17 双版本）
+├── jdbcmon-driver/         # Driver/URL 代理接入（模式2）
 ├── jdbcmon-spring/         # Spring Boot 集成（需 JDK 17+）
 └── jdbcmon-test/           # 集成测试 & JMH 基准测试
 ```
