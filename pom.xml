@@ -39,6 +39,7 @@
 
     <modules>
         <module>jdbcmon-core</module>
+        <module>jdbcmon-driver</module>
         <module>jdbcmon-spring</module>
         <module>jdbcmon-test</module>
     </modules>
