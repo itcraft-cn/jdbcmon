@@ -35,6 +35,13 @@
 
         <dependency>
             <groupId>cn.itcraft</groupId>
+            <artifactId>jdbcmon-driver</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>cn.itcraft</groupId>
             <artifactId>jdbcmon-spring</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
