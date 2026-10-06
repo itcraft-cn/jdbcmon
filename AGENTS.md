@@ -60,6 +60,7 @@ mvn clean verify
 ```java
 WrappedConfig config = new WrappedConfig.Builder()
     .metricsLevel(MetricsLevel.BASIC)  // BASIC/EXTENDED/FULL
+    .sampleRate(10000)                 // 采样率（万分比），10000=全量，1=0.01%
     .slowQueryThresholdMs(1000)
     .hugeResultSetThreshold(2000)      // 超大结果集阈值
     .hugeResultSetAction(HugeResultSetAction.NOTIFY_IMMEDIATE)  // 触发行为
@@ -174,29 +175,87 @@ jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
 
 通过 skill /java-env 获取
 
+### 环境变量
+
+- `${AI_SPEC_ROOT}` 定义在 bash/zsh 环境变量中，可被读取：`echo ${AI_SPEC_ROOT}`
+
 ### 交互规则
 
-1. 处于 AI Coding Plan 包月模式下，Token 不考虑，时间不考虑，专注于高效而完整地工作
-2. 所有交互均使用简体中文
-3. 持续使用 skill /memrec 记忆
-4. 每次沟通产出文件后，均执行 git 提交
-5. git 仅以当前 `user.name` 提交，不推送到远端
-6. git 提交均遵循约定式提交规范（Conventional Commits）执行
-7. 编排计划或设计时，如过长(>3000行)，拆分为多份文档
-8. 重要内容(plan、design等)，随时记录到 MEMORY.md 和 memrec
-9. 版本管理忽略 MEMORY.md，写入 .gitignore，不提交到 Git
+必须遵循 interaction.rules.md 中描述的规则，核心条款如下：
+
+1. 所有交互均使用简体中文，所有输出都不得带 Emoji，以显正式
+2. 每次交互的第一步，都是先检索 memrec-mcp，并在输出后随时、持续使用 memrec-mcp 记录核心观点、关键节点、重要内容（plan、design 等）
+3. 每次产出最后一步，确认是否需要更新 MEMORY.md + 记录 memrec-mcp；如产出文件后，均执行 git 提交
+4. git 仅以当前 `user.name` 提交，绝不推送到远端
+5. git 提交均遵循约定式提交规范（Conventional Commits）执行
+6. 版本管理忽略 MEMORY.md，写入 .gitignore，不提交到 git
+7. 编排计划或设计时，如过长(>2000行)，拆分为多份文档
+8. 计划或设计中，不要穿插代码，代码不能成为设计或计划的主要内容，仅需要部分伪代码将逻辑讲清楚
+9. 编码时，合理生成注释。文件头/类头/函数头/方法头，应有描述和注意事项；重要算法，重要参数，重要设计，应有解释和说明
+10. 修改时，不删除原有注释，但如已经语义变化等必要情况，需要变更或删除，重新补充注释，参见上一条
+11. 禁止在编码使用 stdout/stderr，测试代码也尽可能使用日志输出
+12. 本机为 linux，且配备了更高效的工具，倾向使用这些工具：fd[find]、rg[grep]、sd[sed]、eza[ls]、plocate[类似 everything]、f2[批量重命名]、rrn[同 f2,弱化]、ntimes[重复执行]、zg/codegraph/semble[特化的代码检索]
+
+授权读取：${AI_SPEC_ROOT}/agent-template/interaction.rules.md
 
 ### 编码规范
 
-授权读取：/disk2/helly_data/code/markdown/self-ai-spec/lang-spec/spec.java.md
-
-Read /disk2/helly_data/code/markdown/self-ai-spec/lang-spec/spec.java.md
+授权读取：${AI_SPEC_ROOT}/lang-spec/spec.java.md
+授权读取：${AI_SPEC_ROOT}/lang-spec/review.java.md
 
 ### 构建工具
 
-授权读取：/disk2/helly_data/code/markdown/self-ai-spec/lang-spec/ci.java.md
+授权读取：${AI_SPEC_ROOT}/lang-spec/ci.java.md
 
-Read /disk2/helly_data/code/markdown/self-ai-spec/lang-spec/ci.java.md
+### 特色工具
+
+#### spotbugs 代码静态扫描
+
+dir:
+
+`${HOME}/app/spotbugs`
+
+#### pmd 代码静态扫描
+
+dir:
+
+`${HOME}/app/pmd`
+
+#### arthas 实时挂载 JVM 分析，综合分析工具
+
+dir:
+
+`${HOME}/app/arthas`
+
+#### async-profiler 挂载后产出 CPU 火焰图或内存火焰图
+
+dir:
+
+```
+${HOME}/app/async-profiler
+${HOME}/bin/aspfit   # 按 pid 采样
+${HOME}/bin/aspfitn  # 按名称采样
+${HOME}/bin/aspflist # 列出支持的模式
+```
+
+#### jitwatch jit 分析
+
+dir:
+
+```
+${HOME}/app/jitwatch
+${HOME}/bin/jitwatch-ui   # FX UI，较少使用
+${HOME}/bin/jarScanMax325 # 代码静态扫描，超 325bytes 无法被 jit 加速的方法
+```
+
+#### dump parser
+
+console parser, faster than GUI parser
+
+```
+${HOME}/.cargo/bin/hprof-slurp # 超快速
+${HOME}/.cargo/bin/jhh         # 超快速
+```
 
 ### 代码风格
 - 使用 final 修饰不可变字段和类
@@ -211,3 +270,4 @@ Read /disk2/helly_data/code/markdown/self-ai-spec/lang-spec/ci.java.md
 - 预计算阈值：slowQueryThresholdNanos 避免每次 TimeUnit 转换
 - LongAdder 替代 AtomicLong 实现高并发计数
 - 使用 ThreadLocal 复用对象（如 SqlExecutionContext）
+- sampleRate 采样：万分比，10000=全量，shouldSample() 短路避免随机数生成
