@@ -57,7 +57,7 @@ System.out.println("慢查询数: " + stats.getTotalSlowQueries());
 |------|------|--------|----------|
 | 模式1 显式包装 | `new WrappedDataSource(target, config)` / Spring Starter | 需改代码或加依赖 | 完全掌控、单元与集成测试 |
 | 模式2 Driver/URL 代理 | JDBC URL 加 `jdbc:jdbcmon:` 前缀 | 零代码，仅改配置 | 不便改代码、连接池配置接入 |
-| 模式3 javaagent | `-javaagent:jdbcmon-agent.jar`（规划中） | 零 | 需覆盖框架内部创建的数据源 |
+| 模式3 javaagent | `-javaagent:jdbcmon-agent.jar` | 零 | 需覆盖框架内部创建的数据源 |
 
 ### 模式2：Driver/URL 代理
 
@@ -85,6 +85,24 @@ jdbcmon.hugeResultSetAction=NOTIFY_IMMEDIATE
 ```
 
 提示：采样默认万分比 100（1%），全量采集请显式设置 `jdbcmon.sampleRate=10000`。
+
+### 模式3：javaagent
+
+将 `jdbcmon-agent.jar` 挂载到 JVM 启动参数即可，无需改动代码或数据源配置：
+
+```bash
+java -javaagent:/path/to/jdbcmon-agent.jar -jar app.jar
+```
+
+可选参数（`=` 之后以 `;` 分隔）：
+
+```bash
+java -javaagent:/path/to/jdbcmon-agent.jar=sampleRate=10000;slowQueryThresholdMs=1000 -jar app.jar
+```
+
+配置优先级：agent 参数 > 系统属性 `jdbcmon.*` > classpath `jdbcmon.properties` > 默认。
+
+agent 会拦截所有 JDBC 驱动的 `connect` 调用并自动包装连接，适用于连接由框架内部创建、无法显式包装的场景。
 
 ## 多版本构建
 
@@ -212,6 +230,7 @@ sqlMonitor.addListener(new CustomListener());
 jdbcmon/
 ├── jdbcmon-core/           # 核心模块（JDK 8/17 双版本）
 ├── jdbcmon-driver/         # Driver/URL 代理接入（模式2）
+├── jdbcmon-agent/          # javaagent 零侵入接入（模式3）
 ├── jdbcmon-spring/         # Spring Boot 集成（需 JDK 17+）
 └── jdbcmon-test/           # 集成测试 & JMH 基准测试
 ```

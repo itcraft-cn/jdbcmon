@@ -57,7 +57,7 @@ The monitoring engine is decoupled from the delivery layer, so the same engine s
 |------|----------|---------------|----------|
 | Mode 1 Explicit wrapping | `new WrappedDataSource(target, config)` / Spring Starter | Code change or dependency | Full control, unit and integration testing |
 | Mode 2 Driver/URL proxy | Prefix the JDBC URL with `jdbc:jdbcmon:` | Zero code, config only | When code changes are not possible; connection pool config |
-| Mode 3 javaagent | `-javaagent:jdbcmon-agent.jar` (planned) | Zero | Covering internally created data sources |
+| Mode 3 javaagent | `-javaagent:jdbcmon-agent.jar` | Zero | Covering internally created data sources |
 
 ### Mode 2: Driver/URL proxy
 
@@ -85,6 +85,24 @@ jdbcmon.hugeResultSetAction=NOTIFY_IMMEDIATE
 ```
 
 Note: sampling defaults to 100 basis points (1%); set `jdbcmon.sampleRate=10000` for full capture.
+
+### Mode 3: javaagent
+
+Attach `jdbcmon-agent.jar` to the JVM startup options. No code or data source changes are required:
+
+```bash
+java -javaagent:/path/to/jdbcmon-agent.jar -jar app.jar
+```
+
+Optional agent arguments (separated by `;` after `=`):
+
+```bash
+java -javaagent:/path/to/jdbcmon-agent.jar=sampleRate=10000;slowQueryThresholdMs=1000 -jar app.jar
+```
+
+Configuration priority: agent arguments > system properties `jdbcmon.*` > classpath `jdbcmon.properties` > defaults.
+
+The agent instruments all JDBC driver `connect` calls and wraps connections automatically, which suits cases where connections are created internally by a framework and cannot be wrapped explicitly.
 
 ## Multi-Version Build
 
@@ -212,6 +230,7 @@ sqlMonitor.addListener(new CustomListener());
 jdbcmon/
 ├── jdbcmon-core/           # Core module (JDK 8/17 dual versions)
 ├── jdbcmon-driver/         # Driver/URL proxy integration (Mode 2)
+├── jdbcmon-agent/          # javaagent zero-intrusion integration (Mode 3)
 ├── jdbcmon-spring/         # Spring Boot integration (requires JDK 17+)
 └── jdbcmon-test/           # Integration tests & JMH benchmarks
 ```

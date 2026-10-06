@@ -16,6 +16,7 @@ jdbcmon 是一个高性能、可扩展的轻量级 JDBC 监控代理框架。
 jdbcmon/
 ├── jdbcmon-core/           # 核心模块（JDK 8 兼容，JDK 17 性能更优）
 ├── jdbcmon-driver/         # Driver/URL 代理接入（模式2：jdbc:jdbcmon: 前缀）
+├── jdbcmon-agent/          # javaagent 零侵入接入（模式3：-javaagent）
 ├── jdbcmon-spring/         # Spring Boot 集成（需 JDK 17+）
 └── jdbcmon-test/           # 集成测试 & JMH 基准测试
 ```
@@ -28,12 +29,19 @@ jdbcmon/
 |------|------|------|--------|
 | 模式1 显式包装 | jdbcmon-core / jdbcmon-spring | `new WrappedDataSource(target, config)` 或 Spring starter | 需改代码或加依赖 |
 | 模式2 Driver/URL 代理 | jdbcmon-driver | URL 加前缀 `jdbc:jdbcmon:` 或指定 `JdbcMonDriver` | 零代码，改配置 |
-| 模式3 javaagent | jdbcmon-agent（规划中） | `-javaagent` | 零 |
+| 模式3 javaagent | jdbcmon-agent | `-javaagent:jdbcmon-agent.jar[=k=v;k=v]` | 零 |
 
 要点（模式2）：
 - `JdbcMonDriver` 通过 SPI（`META-INF/services/java.sql.Driver`）+ 静态块 `registerDriver` 完成注册（SPI 仅触发类加载，注册依赖静态块）
 - 配置来源：classpath `jdbcmon.properties` > 系统属性 `jdbcmon.*` > 默认；入口 `JdbcMonDriverConfig`
 - 幂等：已是 `MonitoredConnection` 不再重复包装
+
+要点（模式3）：
+- 拦截点：所有 `java.sql.Driver` 实现类的 `connect(String, Properties)`，同时覆盖 DriverManager 与连接池路径，天然避免重复包装
+- 实现：ByteBuddy `AgentBuilder` + `Advice`；fat jar 内含 core、ByteBuddy、slf4j
+- 配置来源：classpath `jdbcmon.properties` > 系统属性 > agent 参数（`=` 后 `k=v;k=v`）> 默认；入口 `JdbcMonAgentConfig`
+- 打包注意：ByteBuddy 含多版本 JAR（MR-JAR），shade 无法正确重定位其 `META-INF/versions/**`，故不做包名重定位，并保留 `Multi-Release: true`
+- 已知限制：Web 容器多 ClassLoader 场景，子加载器中的驱动可能无法解析 agent 类
 
 ## 构建、测试、检查命令
 
