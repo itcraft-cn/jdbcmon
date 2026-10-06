@@ -1,7 +1,11 @@
 package cn.itcraft.jdbcmon.listener;
 
 import cn.itcraft.jdbcmon.core.SqlExecutionContext;
-import cn.itcraft.jdbcmon.event.*;
+import cn.itcraft.jdbcmon.event.FailureEvent;
+import cn.itcraft.jdbcmon.event.HugeResultSetEvent;
+import cn.itcraft.jdbcmon.event.MonEvent;
+import cn.itcraft.jdbcmon.event.SlowQueryEvent;
+import cn.itcraft.jdbcmon.event.SuccessEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +14,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class LoggingSqlListener implements SqlExecutionListener {
 
-    private static final Logger log = LoggerFactory.getLogger(LoggingSqlListener.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoggingSqlListener.class);
 
     private final LogLevel logLevel;
 
@@ -48,39 +52,38 @@ public final class LoggingSqlListener implements SqlExecutionListener {
         }
         SqlExecutionContext ctx = event.getContext();
         long elapsedMs = event.getElapsedMillis();
-        log(log, "[JDBCMON] Success: {}ms - {}", elapsedMs, ctx.getSql());
+        log(LOGGER, "[JDBCMON] Success: {}ms - {}", elapsedMs, ctx.getSql());
     }
 
     private void logFailure(FailureEvent event) {
         SqlExecutionContext ctx = event.getContext();
         long elapsedMs = event.getElapsedMillis();
-        log.error("[JDBCMON] Failure: {}ms - {} - {}", elapsedMs, ctx.getSql(), event.getErrorMessage());
+        LOGGER.error("[JDBCMON] Failure: {}ms - {} - {}", elapsedMs, ctx.getSql(), event.getErrorMessage());
     }
 
     private void logSlowQuery(SlowQueryEvent event) {
         SqlExecutionContext ctx = event.getContext();
-        log.warn("[JDBCMON] SLOW QUERY: {}ms (threshold: {}ms) - {}",
-            event.getElapsedMillis(), event.getThresholdMs(), ctx.getSql());
+        LOGGER.warn("[JDBCMON] SLOW QUERY: {}ms (threshold: {}ms) - {}",
+                    event.getElapsedMillis(), event.getThresholdMs(), ctx.getSql());
     }
 
     private void logHugeResultSet(HugeResultSetEvent event) {
         SqlExecutionContext ctx = event.getContext();
-        log.warn("[JDBCMON] HUGE RESULTSET: {} rows (threshold: {}) - {}",
-            event.getRowCount(), event.getThreshold(), ctx.getSql());
+        LOGGER.warn("[JDBCMON] HUGE RESULTSET: {} rows (threshold: {}) - {}",
+                    event.getRowCount(), event.getThreshold(), ctx.getSql());
     }
 
     private boolean shouldLog() {
         switch (logLevel) {
             case DEBUG:
-                return log.isDebugEnabled();
-            case INFO:
-                return log.isInfoEnabled();
+                return LOGGER.isDebugEnabled();
             case WARN:
-                return log.isWarnEnabled();
+                return LOGGER.isWarnEnabled();
             case ERROR:
-                return log.isErrorEnabled();
+                return LOGGER.isErrorEnabled();
+            case INFO:
             default:
-                return log.isInfoEnabled();
+                return LOGGER.isInfoEnabled();
         }
     }
 
@@ -102,6 +105,9 @@ public final class LoggingSqlListener implements SqlExecutionListener {
     }
 
     public enum LogLevel {
-        DEBUG, INFO, WARN, ERROR
+        DEBUG,
+        INFO,
+        WARN,
+        ERROR
     }
 }

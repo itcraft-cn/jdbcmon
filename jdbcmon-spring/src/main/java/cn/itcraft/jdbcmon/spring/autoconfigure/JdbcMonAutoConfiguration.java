@@ -1,9 +1,9 @@
 package cn.itcraft.jdbcmon.spring.autoconfigure;
 
 import cn.itcraft.jdbcmon.config.WrappedConfig;
-import cn.itcraft.jdbcmon.wrap.WrappedDataSource;
 import cn.itcraft.jdbcmon.monitor.SqlMonitor;
 import cn.itcraft.jdbcmon.spring.properties.JdbcMonProperties;
+import cn.itcraft.jdbcmon.wrap.WrappedDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -22,7 +22,7 @@ import javax.sql.DataSource;
 @EnableConfigurationProperties(JdbcMonProperties.class)
 public class JdbcMonAutoConfiguration {
 
-    private static final Logger log = LoggerFactory.getLogger(JdbcMonAutoConfiguration.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JdbcMonAutoConfiguration.class);
 
     private final JdbcMonProperties properties;
 
@@ -33,9 +33,9 @@ public class JdbcMonAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public WrappedConfig wrappedConfig() {
-        log.info("Initializing jdbcmon with slowQueryThresholdMs={}ms, adaptiveThreshold={}",
-            properties.getSlowQueryThresholdMs(),
-            properties.isUseAdaptiveThreshold());
+        LOGGER.info("Initializing jdbcmon with slowQueryThresholdMs={}ms, adaptiveThreshold={}",
+                    properties.getSlowQueryThresholdMs(),
+                    properties.isUseAdaptiveThreshold());
         return properties.toConfig();
     }
 
@@ -51,7 +51,7 @@ public class JdbcMonAutoConfiguration {
             @Override
             public Object postProcessAfterInitialization(Object bean, String beanName) {
                 if (bean instanceof DataSource && !(bean instanceof WrappedDataSource)) {
-                    log.info("Wrapping DataSource bean '{}' with jdbcmon proxy", beanName);
+                    LOGGER.info("Wrapping DataSource bean '{}' with jdbcmon proxy", beanName);
                     return new WrappedDataSource((DataSource) bean, config);
                 }
                 return bean;
