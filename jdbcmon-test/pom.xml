@@ -22,11 +22,6 @@
 
     <properties>
         <jmh.version>1.37</jmh.version>
-        <!-- 测试模块不发布：跳过 deploy 与签名/源码/文档产物 -->
-        <maven.deploy.skip>true</maven.deploy.skip>
-        <maven.source.skip>true</maven.source.skip>
-        <maven.javadoc.skip>true</maven.javadoc.skip>
-        <gpg.skip>true</gpg.skip>
     </properties>
 
     <dependencies>
