@@ -12,7 +12,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) and [Conventi
 - `jdbcmon-driver` module: Mode 2 Driver/URL proxy, zero-code integration by prefixing the JDBC URL with `jdbc:jdbcmon:`
 - `jdbcmon-agent` module: Mode 3 javaagent, instruments every JDBC driver `connect` call for zero-intrusion integration
 - `WrappedConfigLoader`: unified Properties-based configuration loader shared by driver and agent
-- `manual.md` user manual and its English counterpart `manual_en.md`
+- `MANUAL.md` user manual and its English counterpart `MANUAL_en.md`
 
 ### Changed
 
@@ -28,7 +28,7 @@ This project adheres to [Semantic Versioning](https://semver.org/) and [Conventi
 
 ### Documentation
 
-- Standardized bilingual docs: Chinese by default, English suffixed with `_en` (README, manual, CHANGELOG)
+- Standardized bilingual docs: Chinese by default, English suffixed with `_en` (README, MANUAL, CHANGELOG)
 - Added three-mode integration guide, merged the Java template into AGENTS.md
 
 ## [1.0.0] - 2026-04-03

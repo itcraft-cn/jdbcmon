@@ -1,6 +1,6 @@
 # jdbcmon
 
-[中文版](README.md) | [Manual (Chinese)](manual.md)
+[中文版](README.md) | [Manual](MANUAL_en.md) | [Changelog](CHANGELOG_en.md)
 
 A high-performance, extensible lightweight JDBC monitoring proxy framework.
 

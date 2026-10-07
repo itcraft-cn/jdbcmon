@@ -12,7 +12,7 @@
 - `jdbcmon-driver` 模块：方式二 Driver/URL 代理，URL 加 `jdbc:jdbcmon:` 前缀即可零代码接入
 - `jdbcmon-agent` 模块：方式三 javaagent，拦截所有 JDBC 驱动 `connect` 调用，零侵入接入
 - `WrappedConfigLoader`：统一的 Properties 配置加载器，供 driver/agent 复用
-- 使用手册 `manual.md` 与英文版 `manual_en.md`
+- 使用手册 `MANUAL.md` 与英文版 `MANUAL_en.md`
 
 ### 变更
 
@@ -28,7 +28,7 @@
 
 ### 文档
 
-- 双语文档体系规范化：默认中文，英文以 `_en` 结尾（README、manual、CHANGELOG）
+- 双语文档体系规范化：默认中文，英文以 `_en` 结尾（README、MANUAL、CHANGELOG）
 - 补充三模接入说明，AGENTS.md 合并 Java 模板
 
 ## [1.0.0] - 2026-04-03

@@ -1,6 +1,6 @@
 # jdbcmon Manual
 
-[Chinese Manual](manual.md)
+[Chinese Manual](MANUAL.md)
 
 This manual is for users and operators. It covers integration modes, configuration, monitoring capabilities, and common issues. See README and AGENTS.md for architecture and design.
 
