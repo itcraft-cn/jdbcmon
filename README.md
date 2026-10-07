@@ -21,7 +21,7 @@
 <dependency>
     <groupId>cn.itcraft</groupId>
     <artifactId>jdbcmon-core</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>${version}</version>
 </dependency>
 ```
 
@@ -127,7 +127,7 @@ mvn clean install -Pjdk17
 <dependency>
     <groupId>cn.itcraft</groupId>
     <artifactId>jdbcmon-spring</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>${version}</version>
 </dependency>
 ```
 
