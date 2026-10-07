@@ -1,6 +1,6 @@
 # jdbcmon
 
-[English Version](README.md)
+[English Version](README.md) | [使用手册](manual.md)
 
 高性能、可扩展的轻量级 JDBC 监控代理框架。
 
