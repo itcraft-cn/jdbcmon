@@ -2,6 +2,9 @@ package cn.itcraft.jdbcmon.event;
 
 import cn.itcraft.jdbcmon.core.SqlExecutionContext;
 
+/**
+ * SQL 执行失败事件
+ */
 public final class FailureEvent extends AbstractMonEvent {
 
     private final Throwable error;

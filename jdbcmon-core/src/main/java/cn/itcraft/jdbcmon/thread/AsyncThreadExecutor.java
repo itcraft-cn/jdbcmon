@@ -5,6 +5,25 @@ import cn.itcraft.jdbcmon.config.WrappedConfig;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 异步线程执行器
+ * <p>
+ * 用于异步执行监控事件监听器，避免阻塞业务线程。
+ * <p>
+ * <h3>线程池配置</h3>
+ * <ul>
+ *   <li>核心线程数：默认 CPU 核心数 / 2，最小 1</li>
+ *   <li>最大线程数：默认 CPU 核心数</li>
+ *   <li>队列容量：默认 1000</li>
+ *   <li>拒绝策略：CallerRunsPolicy（调用者线程执行）</li>
+ * </ul>
+ * 
+ * <h3>线程特点</h3>
+ * <ul>
+ *   <li>守护线程：不阻塞 JVM 退出</li>
+ *   <li>命名格式：jdbcmon-async-{poolId}-thread-{threadId}</li>
+ * </ul>
+ */
 public final class AsyncThreadExecutor {
 
     private static final AtomicInteger POOL_COUNTER = new AtomicInteger(0);

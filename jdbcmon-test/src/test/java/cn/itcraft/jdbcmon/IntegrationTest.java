@@ -47,6 +47,7 @@ class IntegrationTest {
             .slowQueryThresholdMs(500)
             .logSlowQueries(true)
             .useAdaptiveThreshold(true)
+            .sampleRate(10000)
             .build();
 
         wrappedDataSource = new WrappedDataSource(h2DataSource, config);
@@ -240,6 +241,7 @@ class IntegrationTest {
             .enableLogging(false)
             .hugeResultSetThreshold(5)
             .hugeResultSetAction(HugeResultSetAction.NOTIFY_IMMEDIATE)
+            .sampleRate(10000)
             .build();
         
         JdbcDataSource h2DataSource = new JdbcDataSource();
@@ -281,6 +283,7 @@ class IntegrationTest {
         WrappedConfig throwConfig = new WrappedConfig.Builder()
             .hugeResultSetThreshold(100)
             .hugeResultSetAction(HugeResultSetAction.THROW_EXCEPTION)
+            .sampleRate(10000)
             .build();
 
         JdbcDataSource h2DataSource = new JdbcDataSource();
@@ -309,6 +312,124 @@ class IntegrationTest {
             assertEquals(100, e.getThreshold());
         } finally {
             throwDataSource.shutdown();
+        }
+    }
+
+    @Test
+    @DisplayName("test_sampleRate_1Percent_partialMonitoring")
+    void test_sampleRate_1Percent_partialMonitoring() throws Exception {
+        WrappedConfig onePercentConfig = new WrappedConfig.Builder()
+            .sampleRate(100)
+            .build();
+
+        JdbcDataSource h2DataSource = new JdbcDataSource();
+        h2DataSource.setURL("jdbc:h2:mem:sample_test_" + System.nanoTime() + ";DB_CLOSE_DELAY=-1");
+        h2DataSource.setUser("sa");
+        h2DataSource.setPassword("");
+
+        WrappedDataSource sampleDataSource = new WrappedDataSource(h2DataSource, onePercentConfig);
+        
+        try (Connection conn = sampleDataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            
+            stmt.execute("CREATE TABLE sample_test (id INT PRIMARY KEY)");
+            
+            int executions = 10000;
+            for (int i = 0; i < executions; i++) {
+                stmt.execute("INSERT INTO sample_test VALUES (" + i + ")");
+            }
+            
+            SqlMonitor monitor = sampleDataSource.getSqlMonitor();
+            SqlStatistics stats = monitor.getStatistics();
+            
+            long totalQueries = stats.getTotalQueries();
+            double ratio = (double) totalQueries / executions;
+            
+            assertTrue(totalQueries < executions, 
+                "With sampleRate=100 (1%), monitored count should be less than total executions. " +
+                "Total: " + executions + ", Monitored: " + totalQueries);
+            assertTrue(totalQueries > executions * 0.005, 
+                "With sampleRate=100 (1%), should monitor at least 0.5% of queries. " +
+                "Total: " + executions + ", Monitored: " + totalQueries + ", Ratio: " + ratio);
+        } finally {
+            sampleDataSource.shutdown();
+        }
+    }
+
+    @Test
+    @DisplayName("test_sampleRate_100Percent_fullMonitoring")
+    void test_sampleRate_100Percent_fullMonitoring() throws Exception {
+        WrappedConfig fullConfig = new WrappedConfig.Builder()
+            .sampleRate(10000)
+            .build();
+
+        JdbcDataSource h2DataSource = new JdbcDataSource();
+        h2DataSource.setURL("jdbc:h2:mem:full_sample_test_" + System.nanoTime() + ";DB_CLOSE_DELAY=-1");
+        h2DataSource.setUser("sa");
+        h2DataSource.setPassword("");
+
+        WrappedDataSource fullSampleDataSource = new WrappedDataSource(h2DataSource, fullConfig);
+        
+        try (Connection conn = fullSampleDataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            
+            stmt.execute("CREATE TABLE full_sample_test (id INT PRIMARY KEY, name VARCHAR(100))");
+            
+            String insertSql = "INSERT INTO full_sample_test VALUES (?, ?)";
+            java.sql.PreparedStatement pstmt = conn.prepareStatement(insertSql);
+            int executions = 100;
+            for (int i = 0; i < executions; i++) {
+                pstmt.setInt(1, i);
+                pstmt.setString(2, "name_" + i);
+                pstmt.executeUpdate();
+            }
+            pstmt.close();
+            
+            SqlMonitor monitor = fullSampleDataSource.getSqlMonitor();
+            SqlStatistics stats = monitor.getStatistics();
+            
+            assertEquals(executions, stats.getTotalUpdates(), 
+                "With sampleRate=10000 (100%), all queries should be monitored");
+        } finally {
+            fullSampleDataSource.shutdown();
+        }
+    }
+
+    @Test
+    @DisplayName("test_sampleRate_probabilistic")
+    void test_sampleRate_probabilistic() throws Exception {
+        WrappedConfig fiftyConfig = new WrappedConfig.Builder()
+            .sampleRate(5000)
+            .build();
+
+        JdbcDataSource h2DataSource = new JdbcDataSource();
+        h2DataSource.setURL("jdbc:h2:mem:prob_sample_test_" + System.nanoTime() + ";DB_CLOSE_DELAY=-1");
+        h2DataSource.setUser("sa");
+        h2DataSource.setPassword("");
+
+        WrappedDataSource probDataSource = new WrappedDataSource(h2DataSource, fiftyConfig);
+        
+        try (Connection conn = probDataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            
+            stmt.execute("CREATE TABLE prob_sample_test (id INT PRIMARY KEY)");
+            
+            int executions = 1000;
+            for (int i = 0; i < executions; i++) {
+                stmt.execute("INSERT INTO prob_sample_test VALUES (" + i + ")");
+            }
+            
+            SqlMonitor monitor = probDataSource.getSqlMonitor();
+            SqlStatistics stats = monitor.getStatistics();
+            
+            int monitoredCount = (int) stats.getTotalQueries();
+            double ratio = (double) monitoredCount / executions;
+            
+            assertTrue(ratio > 0.4 && ratio < 0.6, 
+                "With sampleRate=5000 (50%), monitored ratio should be around 0.5, got: " + ratio +
+                ", monitored: " + monitoredCount + ", total: " + executions);
+        } finally {
+            probDataSource.shutdown();
         }
     }
 }

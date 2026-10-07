@@ -19,6 +19,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
+/**
+ * 监控代理 Connection
+ * 
+ * 包装目标 Connection，返回监控代理 Statement/PreparedStatement/CallableStatement。
+ */
 public final class MonitoredConnection implements Connection {
 
     private final Connection delegate;

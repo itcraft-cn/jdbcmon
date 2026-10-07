@@ -15,9 +15,33 @@ jdbcmon 是一个高性能、可扩展的轻量级 JDBC 监控代理框架。
 ```
 jdbcmon/
 ├── jdbcmon-core/           # 核心模块（JDK 8 兼容，JDK 17 性能更优）
+├── jdbcmon-driver/         # Driver/URL 代理接入（模式2：jdbc:jdbcmon: 前缀）
+├── jdbcmon-agent/          # javaagent 零侵入接入（模式3：-javaagent）
 ├── jdbcmon-spring/         # Spring Boot 集成（需 JDK 17+）
 └── jdbcmon-test/           # 集成测试 & JMH 基准测试
 ```
+
+## 接入方式（三种模式）
+
+监控引擎与交付层分离，同一套引擎支持三种接入方式：
+
+| 模式 | 载体 | 方式 | 侵入性 |
+|------|------|------|--------|
+| 模式1 显式包装 | jdbcmon-core / jdbcmon-spring | `new WrappedDataSource(target, config)` 或 Spring starter | 需改代码或加依赖 |
+| 模式2 Driver/URL 代理 | jdbcmon-driver | URL 加前缀 `jdbc:jdbcmon:` 或指定 `JdbcMonDriver` | 零代码，改配置 |
+| 模式3 javaagent | jdbcmon-agent | `-javaagent:jdbcmon-agent.jar[=k=v;k=v]` | 零 |
+
+要点（模式2）：
+- `JdbcMonDriver` 通过 SPI（`META-INF/services/java.sql.Driver`）+ 静态块 `registerDriver` 完成注册（SPI 仅触发类加载，注册依赖静态块）
+- 配置来源：classpath `jdbcmon.properties` > 系统属性 `jdbcmon.*` > 默认；入口 `JdbcMonDriverConfig`
+- 幂等：已是 `MonitoredConnection` 不再重复包装
+
+要点（模式3）：
+- 拦截点：所有 `java.sql.Driver` 实现类的 `connect(String, Properties)`，同时覆盖 DriverManager 与连接池路径，天然避免重复包装
+- 实现：ByteBuddy `AgentBuilder` + `Advice`；fat jar 内含 core、ByteBuddy、slf4j
+- 配置来源：classpath `jdbcmon.properties` > 系统属性 > agent 参数（`=` 后 `k=v;k=v`）> 默认；入口 `JdbcMonAgentConfig`
+- 打包注意：ByteBuddy 含多版本 JAR（MR-JAR），shade 无法正确重定位其 `META-INF/versions/**`，故不做包名重定位，并保留 `Multi-Release: true`
+- 已知限制：Web 容器多 ClassLoader 场景，子加载器中的驱动可能无法解析 agent 类
 
 ## 构建、测试、检查命令
 
@@ -60,6 +84,7 @@ mvn clean verify
 ```java
 WrappedConfig config = new WrappedConfig.Builder()
     .metricsLevel(MetricsLevel.BASIC)  // BASIC/EXTENDED/FULL
+    .sampleRate(10000)                 // 采样率（万分比），10000=全量，1=0.01%
     .slowQueryThresholdMs(1000)
     .hugeResultSetThreshold(2000)      // 超大结果集阈值
     .hugeResultSetAction(HugeResultSetAction.NOTIFY_IMMEDIATE)  // 触发行为
@@ -162,30 +187,99 @@ jdbcmon-core/src/main/java/cn/itcraft/jdbcmon/
     - 在开发前，会对需求进行详尽分析，提供多套方案，以上、中、下三策的形式呈现，以备后续决策参考
     - 在设计时，会充分考虑非功能性需求：安全性、可扩展性、可用性、可观测性、性能等
     - 在设计细节时，充分考虑各种设计模式及各语言特性
-2. 你是资深开发者，对 Java 的 SDK/第三方库均非常了解，对 JDK 各版本间细节均了解，对 JVM 调优也非常擅长，尤其擅长性能调优/反射/多线程/Unsafe底层/网络通信，对 JVM 内存布局非常清楚，开发上偏好面向对象编程（OOP）+接口
+2. 你是资深开发者
+    - 对 Java 的 SDK/第三方库均非常了解
+    - 对 JDK 各版本间细节均了解
+    - 对 JVM 调优也非常擅长
+    - 尤其擅长性能调优/反射/多线程/Unsafe底层/网络通信
+    - 对 JVM 内存布局非常清楚
+    - 开发上偏好面向对象编程（OOP）+接口
 
 ### 环境信息
 
 通过 skill /java-env 获取
 
+### 环境变量
+
+- `${AI_SPEC_ROOT}` 定义在 bash/zsh 环境变量中，可被读取：`echo ${AI_SPEC_ROOT}`
+
 ### 交互规则
 
-1. 所有交互均使用简体中文
-2. 每次沟通产出文件后，均执行 git 提交
-3. git 仅以当前 `user.name` 提交，不推送到远端
-4. git 提交均遵循约定式提交规范（Conventional Commits）执行
+必须遵循 interaction.rules.md 中描述的规则，核心条款如下：
+
+1. 所有交互均使用简体中文，所有输出都不得带 Emoji，以显正式
+2. 每次交互的第一步，都是先检索 memrec-mcp，并在输出后随时、持续使用 memrec-mcp 记录核心观点、关键节点、重要内容（plan、design 等）
+3. 每次产出最后一步，确认是否需要更新 MEMORY.md + 记录 memrec-mcp；如产出文件后，均执行 git 提交
+4. git 仅以当前 `user.name` 提交，绝不推送到远端
+5. git 提交均遵循约定式提交规范（Conventional Commits）执行
+6. 版本管理忽略 MEMORY.md，写入 .gitignore，不提交到 git
+7. 编排计划或设计时，如过长(>2000行)，拆分为多份文档
+8. 计划或设计中，不要穿插代码，代码不能成为设计或计划的主要内容，仅需要部分伪代码将逻辑讲清楚
+9. 编码时，合理生成注释。文件头/类头/函数头/方法头，应有描述和注意事项；重要算法，重要参数，重要设计，应有解释和说明
+10. 修改时，不删除原有注释，但如已经语义变化等必要情况，需要变更或删除，重新补充注释，参见上一条
+11. 禁止在编码使用 stdout/stderr，测试代码也尽可能使用日志输出
+12. 本机为 linux，且配备了更高效的工具，倾向使用这些工具：fd[find]、rg[grep]、sd[sed]、eza[ls]、plocate[类似 everything]、f2[批量重命名]、rrn[同 f2,弱化]、ntimes[重复执行]、zg/codegraph/semble[特化的代码检索]
+
+授权读取：${AI_SPEC_ROOT}/agent-template/interaction.rules.md
 
 ### 编码规范
 
-授权读取：/disk2/helly_data/code/markdown/self-ai-spec/lang-spec/spec.java.md
-
-Read /disk2/helly_data/code/markdown/self-ai-spec/lang-spec/spec.java.md
+授权读取：${AI_SPEC_ROOT}/lang-spec/spec.java.md
+授权读取：${AI_SPEC_ROOT}/lang-spec/review.java.md
 
 ### 构建工具
 
-授权读取：/disk2/helly_data/code/markdown/self-ai-spec/lang-spec/ci.java.md
+授权读取：${AI_SPEC_ROOT}/lang-spec/ci.java.md
 
-Read /disk2/helly_data/code/markdown/self-ai-spec/lang-spec/ci.java.md
+### 特色工具
+
+#### spotbugs 代码静态扫描
+
+dir:
+
+`${HOME}/app/spotbugs`
+
+#### pmd 代码静态扫描
+
+dir:
+
+`${HOME}/app/pmd`
+
+#### arthas 实时挂载 JVM 分析，综合分析工具
+
+dir:
+
+`${HOME}/app/arthas`
+
+#### async-profiler 挂载后产出 CPU 火焰图或内存火焰图
+
+dir:
+
+```
+${HOME}/app/async-profiler
+${HOME}/bin/aspfit   # 按 pid 采样
+${HOME}/bin/aspfitn  # 按名称采样
+${HOME}/bin/aspflist # 列出支持的模式
+```
+
+#### jitwatch jit 分析
+
+dir:
+
+```
+${HOME}/app/jitwatch
+${HOME}/bin/jitwatch-ui   # FX UI，较少使用
+${HOME}/bin/jarScanMax325 # 代码静态扫描，超 325bytes 无法被 jit 加速的方法
+```
+
+#### dump parser
+
+console parser, faster than GUI parser
+
+```
+${HOME}/.cargo/bin/hprof-slurp # 超快速
+${HOME}/.cargo/bin/jhh         # 超快速
+```
 
 ### 代码风格
 - 使用 final 修饰不可变字段和类
@@ -200,3 +294,4 @@ Read /disk2/helly_data/code/markdown/self-ai-spec/lang-spec/ci.java.md
 - 预计算阈值：slowQueryThresholdNanos 避免每次 TimeUnit 转换
 - LongAdder 替代 AtomicLong 实现高并发计数
 - 使用 ThreadLocal 复用对象（如 SqlExecutionContext）
+- sampleRate 采样：万分比，10000=全量，shouldSample() 短路避免随机数生成

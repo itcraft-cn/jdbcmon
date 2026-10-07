@@ -2,6 +2,9 @@ package cn.itcraft.jdbcmon.event;
 
 import cn.itcraft.jdbcmon.core.SqlExecutionContext;
 
+/**
+ * 慢查询事件
+ */
 public final class SlowQueryEvent extends AbstractMonEvent {
 
     private final long thresholdMs;

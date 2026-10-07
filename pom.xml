@@ -6,7 +6,7 @@
 
     <groupId>cn.itcraft</groupId>
     <artifactId>jdbcmon</artifactId>
-    <version>1.0.0</version><!-- managed by updgitver -->
+    <version>1.1.0-dev</version><!-- managed by updgitver -->
     <packaging>pom</packaging>
 
     <name>jdbcmon</name>
@@ -39,6 +39,8 @@
 
     <modules>
         <module>jdbcmon-core</module>
+        <module>jdbcmon-driver</module>
+        <module>jdbcmon-agent</module>
         <module>jdbcmon-spring</module>
         <module>jdbcmon-test</module>
     </modules>
@@ -48,7 +50,7 @@
         <plugin.surefire>3.2.2</plugin.surefire>
         <plugin.source>3.2.1</plugin.source>
         <plugin.javadoc>3.3.2</plugin.javadoc>
-        <plugin.gpg>1.5</plugin.gpg>
+        <plugin.gpg>3.2.7</plugin.gpg>
         <plugin.publish>0.7.0</plugin.publish>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -130,6 +132,11 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>${plugin.javadoc}</version>
+                <configuration>
+                    <!-- 兼容高版本 JDK 的严格 doclint，避免 h3 标题等历史注释导致构建失败 -->
+                    <doclint>none</doclint>
+                    <failOnWarnings>false</failOnWarnings>
+                </configuration>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>

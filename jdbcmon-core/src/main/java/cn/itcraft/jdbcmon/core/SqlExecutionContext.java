@@ -2,6 +2,26 @@ package cn.itcraft.jdbcmon.core;
 
 import java.util.Objects;
 
+/**
+ * SQL 执行上下文
+ * <p>
+ * 封装单次 SQL 执行的上下文信息，传递给事件监听器。
+ * <p>
+ * <h3>性能优化</h3>
+ * <ul>
+ *   <li>ThreadLocal 复用：避免频繁创建对象，减少 GC 压力</li>
+ *   <li>acquire/release 模式：显式生命周期管理</li>
+ * </ul>
+ * 
+ * <h3>包含信息</h3>
+ * <ul>
+ *   <li>代理 ID（proxyId）：标识 Connection 代理实例</li>
+ *   <li>SQL 语句、方法名、类名</li>
+ *   <li>线程信息（线程名、线程 ID）</li>
+ *   <li>批处理信息（批大小、更新计数）</li>
+ *   <li>调用栈</li>
+ * </ul>
+ */
 public final class SqlExecutionContext {
 
     private long proxyId;

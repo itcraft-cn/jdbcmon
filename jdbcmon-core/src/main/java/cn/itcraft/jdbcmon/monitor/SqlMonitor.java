@@ -8,9 +8,9 @@ import cn.itcraft.jdbcmon.event.HugeResultSetEvent;
 import cn.itcraft.jdbcmon.event.MonEvent;
 import cn.itcraft.jdbcmon.event.SlowQueryEvent;
 import cn.itcraft.jdbcmon.event.SuccessEvent;
-import cn.itcraft.jdbcmon.thread.AsyncThreadExecutor;
 import cn.itcraft.jdbcmon.listener.CompositeSqlListener;
 import cn.itcraft.jdbcmon.listener.LoggingSqlListener;
+import cn.itcraft.jdbcmon.thread.AsyncThreadExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,27 +21,55 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
+/**
+ * SQL 监控核心类
+ * <p>
+ * 负责采集、存储、统计 SQL 执行指标，并通过异步事件机制通知监听器。
+ * <p>
+ * <h3>核心职责</h3>
+ * <ul>
+ *   <li>指标采集：记录 SQL 执行次数、耗时、错误等指标</li>
+ *   <li>慢查询检测：检测超阈值查询，触发告警</li>
+ *   <li>事件发布：异步通知监听器（如日志记录）</li>
+ *   <li>统计查询：提供实时统计信息</li>
+ * </ul>
+ *
+ * <h3>线程安全</h3>
+ * <ul>
+ *   <li>使用 LongAdder 实现高并发计数</li>
+ *   <li>使用 ConcurrentHashMap 存储 SQL 指标</li>
+ *   <li>事件发布使用异步线程池，避免阻塞业务线程</li>
+ * </ul>
+ *
+ * <h3>性能优化</h3>
+ * <ul>
+ *   <li>策略模式：根据 MetricsLevel 选择不同 Recorder 实现</li>
+ *   <li>预计算：slowQueryThresholdNanos 避免 TimeUnit 转换</li>
+ *   <li>异步化：事件通知不阻塞 SQL 执行</li>
+ * </ul>
+ *
+ * @see SqlMetrics
+ * @see SqlStatistics
+ * @see MetricsRecorder
+ */
 public final class SqlMonitor {
 
-    private static final Logger log = LoggerFactory.getLogger(SqlMonitor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlMonitor.class);
 
     private final WrappedConfig config;
     private final CompositeSqlListener listeners = new CompositeSqlListener();
     private final Map<String, SqlMetrics> metricsMap = new ConcurrentHashMap<>();
     private final AsyncThreadExecutor asyncExecutor;
-
-    private volatile MetricsLevel currentLevel;
-    private volatile MetricsRecorder recorder;
-    private volatile long slowQueryThresholdNanos;
-
     private final LongAdder totalQueries = new LongAdder();
     private final LongAdder totalUpdates = new LongAdder();
     private final LongAdder totalBatchOps = new LongAdder();
     private final LongAdder totalErrors = new LongAdder();
     private final LongAdder totalSlowQueries = new LongAdder();
-
     private final AdaptiveThreshold adaptiveThreshold;
     private final boolean logSlowQueries;
+    private volatile MetricsLevel currentLevel;
+    private volatile MetricsRecorder recorder;
+    private volatile long slowQueryThresholdNanos;
 
     public SqlMonitor(WrappedConfig config) {
         this.config = config;
@@ -49,9 +77,9 @@ public final class SqlMonitor {
         this.recorder = createRecorder(currentLevel);
         this.slowQueryThresholdNanos = TimeUnit.MILLISECONDS.toNanos(config.getSlowQueryThresholdMs());
         this.logSlowQueries = config.isLogSlowQueries();
-        this.adaptiveThreshold = config.isUseAdaptiveThreshold() 
-            ? new AdaptiveThreshold(config) 
-            : null;
+        this.adaptiveThreshold = config.isUseAdaptiveThreshold()
+                                 ? new AdaptiveThreshold(config)
+                                 : null;
         this.asyncExecutor = new AsyncThreadExecutor(config);
 
         registerDefaultListeners();
@@ -77,13 +105,13 @@ public final class SqlMonitor {
 
     // ========== 运行时配置 ==========
 
+    public MetricsLevel getMetricsLevel() {
+        return currentLevel;
+    }
+
     public void setMetricsLevel(MetricsLevel level) {
         this.currentLevel = level;
         this.recorder = createRecorder(level);
-    }
-
-    public MetricsLevel getMetricsLevel() {
-        return currentLevel;
     }
 
     public void setSlowQueryThresholdMs(long thresholdMs) {
@@ -132,7 +160,7 @@ public final class SqlMonitor {
             if (logSlowQueries) {
                 long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(elapsedNanos);
                 long thresholdMs = TimeUnit.NANOSECONDS.toMillis(slowQueryThresholdNanos);
-                log.warn("[SLOW_SQL] {}ms (threshold: {}ms) - {}", elapsedMillis, thresholdMs, sql);
+                LOGGER.warn("[SLOW_SQL] {}ms (threshold: {}ms) - {}", elapsedMillis, thresholdMs, sql);
             }
         }
     }
@@ -240,8 +268,8 @@ public final class SqlMonitor {
             }
 
             if (logSlowQueries) {
-                log.warn("[SLOW_SQL] {}ms (threshold: {}ms) - {}", 
-                    elapsedMillis, threshold, context.getSql());
+                LOGGER.warn("[SLOW_SQL] {}ms (threshold: {}ms) - {}",
+                            elapsedMillis, threshold, context.getSql());
             }
 
             notifySlowQueryAsync(context, elapsedMillis);
@@ -311,7 +339,9 @@ public final class SqlMonitor {
     }
 
     public void notifyHugeResultSet(String sql, int rowCount) {
-        if (listeners.getListeners().isEmpty()) return;
+        if (listeners.getListeners().isEmpty()) {
+            return;
+        }
 
         SqlExecutionContext context = new SqlExecutionContext();
         context.setSql(sql);
@@ -321,22 +351,26 @@ public final class SqlMonitor {
     }
 
     public void recordResultSetSize(String sql, int rowCount) {
-        if (sql == null || sql.isEmpty()) return;
-        
+        if (sql == null || sql.isEmpty()) {
+            return;
+        }
+
         SqlMetrics metrics = metricsMap.get(sql);
         if (metrics != null) {
             metrics.addResultRows(rowCount);
         }
 
         if (config.getHugeResultSetAction() == cn.itcraft.jdbcmon.config.HugeResultSetAction.NOTIFY_AFTER
-            && rowCount >= config.getHugeResultSetThreshold()) {
+                && rowCount >= config.getHugeResultSetThreshold()) {
             notifyHugeResultSet(sql, rowCount);
         }
     }
 
     public void recordResultSetSizeWithNotifyAfter(String sql, int rowCount, int threshold) {
-        if (sql == null || sql.isEmpty()) return;
-        
+        if (sql == null || sql.isEmpty()) {
+            return;
+        }
+
         SqlMetrics metrics = metricsMap.get(sql);
         if (metrics != null) {
             metrics.addResultRows(rowCount);

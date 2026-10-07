@@ -11,7 +11,8 @@ import org.junit.platform.suite.api.SuiteDisplayName;
     AdaptiveThresholdTest.class,
     IntegrationTest.class,
     EventTest.class,
-    MonitoredResultSetTest.class
+    MonitoredResultSetTest.class,
+    JdbcMonDriverTest.class
 })
 public class TestSuite {
 }

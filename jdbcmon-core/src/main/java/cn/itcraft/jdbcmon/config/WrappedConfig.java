@@ -1,22 +1,62 @@
 package cn.itcraft.jdbcmon.config;
 
+import cn.itcraft.jdbcmon.wrap.WrappedDataSourceBuilder;
+
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 
-import static cn.itcraft.jdbcmon.consts.JdbcConsts.*;
+import static cn.itcraft.jdbcmon.consts.JdbcConsts.ADAPTIVE_PERCENTILE;
+import static cn.itcraft.jdbcmon.consts.JdbcConsts.ADAPTIVE_WINDOW_SIZE_SECONDS;
+import static cn.itcraft.jdbcmon.consts.JdbcConsts.DEFAULT_CORE_POOL_SIZE;
+import static cn.itcraft.jdbcmon.consts.JdbcConsts.DEFAULT_HUGE_RESULTSET_THRESHOLD;
+import static cn.itcraft.jdbcmon.consts.JdbcConsts.DEFAULT_MAX_POOL_SIZE;
+import static cn.itcraft.jdbcmon.consts.JdbcConsts.DEFAULT_QUEUE_CAPACITY;
+import static cn.itcraft.jdbcmon.consts.JdbcConsts.DEFAULT_SLOW_QUERY_THRESHOLD_MS;
 
+/**
+ * JDBC 监控配置
+ * <p>
+ * 使用 Builder 模式构建不可变配置对象：
+ * <pre>{@code
+ * WrappedConfig config = new WrappedConfig.Builder()
+ *     .sampleRate(10000)              // 全量采样
+ *     .slowQueryThresholdMs(1000)     // 慢查询阈值 1秒
+ *     .build();
+ * }</pre>
+ *
+ * <h3>核心配置项</h3>
+ * <ul>
+ *   <li>sampleRate: 采样率（万分比），默认 100（1%）</li>
+ *   <li>slowQueryThresholdMs: 慢查询阈值，默认 1000ms</li>
+ *   <li>metricsLevel: 监控级别，默认 BASIC</li>
+ *   <li>hugeResultSetThreshold: 超大结果集阈值，默认 1000 行</li>
+ * </ul>
+ *
+ * @see WrappedDataSourceBuilder
+ * @see MetricsLevel
+ */
 public final class WrappedConfig {
 
+    private final Set<String> excludedTables = new HashSet<>();
+    private final Set<String> excludedSchemas = new HashSet<>();
     private MetricsLevel metricsLevel = MetricsLevel.BASIC;
-    
     private boolean enableMonitoring = true;
+    /**
+     * 采样率（万分比）
+     * <ul>
+     *   <li>范围: 1 - 10000</li>
+     *   <li>1 = 0.01%（万分之一）</li>
+     *   <li>100 = 1%（默认值）</li>
+     *   <li>10000 = 100%（全量采集）</li>
+     * </ul>
+     */
+    private int sampleRate = 100;
+    private boolean sampleAlways = false;
     private long slowQueryThresholdMs = DEFAULT_SLOW_QUERY_THRESHOLD_MS;
     private boolean logSlowQueries = true;
     private boolean collectStackTrace = false;
-
-    private Set<String> excludedTables = new HashSet<>();
-    private Set<String> excludedSchemas = new HashSet<>();
     private Pattern sqlPatternFilter = null;
 
     private int corePoolSize = DEFAULT_CORE_POOL_SIZE;
@@ -138,6 +178,25 @@ public final class WrappedConfig {
 
     public HugeResultSetAction getHugeResultSetAction() {
         return hugeResultSetAction;
+    }
+
+    public int getSampleRate() {
+        return sampleRate;
+    }
+
+    /**
+     * 判断当前请求是否需要采样
+     * <p>
+     * 采样逻辑：
+     * <ul>
+     *   <li>sampleRate = 10000 时，直接返回 true（优化：避免随机数生成）</li>
+     *   <li>其他值时，使用 ThreadLocalRandom 生成 [0, 10000) 随机数，判断是否小于 sampleRate</li>
+     * </ul>
+     *
+     * @return true 表示需要采样，false 表示跳过监控
+     */
+    public boolean shouldSample() {
+        return sampleAlways || ThreadLocalRandom.current().nextInt(10000) < sampleRate;
     }
 
     public boolean shouldFilter(String sql) {
@@ -279,6 +338,27 @@ public final class WrappedConfig {
 
         public Builder hugeResultSetAction(HugeResultSetAction action) {
             config.hugeResultSetAction = action;
+            return this;
+        }
+
+        /**
+         * 设置采样率（万分比）
+         *
+         * @param rate 采样率，范围 1-10000
+         *             <ul>
+         *               <li>1 = 0.01%（万分之一）</li>
+         *               <li>100 = 1%（默认值）</li>
+         *               <li>10000 = 100%（全量采集）</li>
+         *             </ul>
+         * @return this
+         * @throws IllegalArgumentException 如果 rate 不在 [1, 10000] 范围内
+         */
+        public Builder sampleRate(int rate) {
+            if (rate < 1 || rate > 10000) {
+                throw new IllegalArgumentException("sampleRate must be between 1 and 10000");
+            }
+            config.sampleRate = rate;
+            config.sampleAlways = (rate == 10000);
             return this;
         }
 
