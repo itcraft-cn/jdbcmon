@@ -132,6 +132,15 @@
                     <classpathScope>test</classpathScope>
                 </configuration>
             </plugin>
+
+            <!-- 测试模块不发布：跳过 Sonatype Central 发布 -->
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <configuration>
+                    <skipPublishing>true</skipPublishing>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
