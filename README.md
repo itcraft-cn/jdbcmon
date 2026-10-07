@@ -1,21 +1,21 @@
 # jdbcmon
 
-[中文版](README_cn.md) | [使用手册 (Chinese)](manual.md)
+[English Version](README_en.md) | [使用手册](manual.md)
 
-A high-performance, extensible lightweight JDBC monitoring proxy framework.
+高性能、可扩展的轻量级 JDBC 监控代理框架。
 
-## Features
+## 特性
 
-- **Zero Intrusion**: No need to modify business code, automatically wraps JDBC objects via dynamic proxy
-- **High Performance**: Query overhead < 10%, Update overhead < 15%, suitable for functional testing scenarios
-- **Extensible**: Listener mechanism supports custom monitoring metrics, event system easy to customize
-- **Multi-JDK Support**: Supports both JDK 8/17, JDK 17 offers better performance
-- **Adaptive Threshold**: Dynamically calculates slow SQL threshold based on P95
-- **Huge ResultSet Detection**: Supports threshold configuration with multiple trigger strategies (throw exception / immediate notification / delayed notification)
+- **零侵入**：无需修改业务代码，通过动态代理自动包装 JDBC 对象
+- **高性能**：Query 开销 < 10%，Update 开销 < 15%，功能测试场景完全适用
+- **可扩展**：监听器机制支持自定义监控指标，事件体系易于定制
+- **多 JDK 支持**：同时支持 JDK 8/17，JDK 17 性能更优
+- **自适应阈值**：基于 P95 动态计算慢 SQL 阈值
+- **大结果集检测**：支持阈值配置，多种触发策略（抛异常/立即通知/延迟通知）
 
-## Quick Start
+## 快速开始
 
-### Maven Dependency
+### Maven 依赖
 
 ```xml
 <dependency>
@@ -25,7 +25,7 @@ A high-performance, extensible lightweight JDBC monitoring proxy framework.
 </dependency>
 ```
 
-### Basic Usage
+### 基本使用
 
 ```java
 import cn.itcraft.jdbcmon.config.WrappedConfig;
@@ -45,37 +45,37 @@ WrappedConfig config = new WrappedConfig.Builder()
 DataSource wrappedDataSource = new WrappedDataSource(originalDataSource, config);
 
 SqlStatistics stats = wrappedDataSource.getSqlMonitor().getStatistics();
-System.out.println("Total queries: " + stats.getTotalQueries());
-System.out.println("Slow queries: " + stats.getTotalSlowQueries());
+System.out.println("总查询数: " + stats.getTotalQueries());
+System.out.println("慢查询数: " + stats.getTotalSlowQueries());
 ```
 
-## Integration Modes
+## 接入方式（三种模式）
 
-The monitoring engine is decoupled from the delivery layer, so the same engine supports three integration modes.
+监控引擎与交付层分离，同一套引擎支持三种接入方式，可按场景选择或组合。
 
-| Mode | Approach | Intrusiveness | Use Case |
-|------|----------|---------------|----------|
-| Mode 1 Explicit wrapping | `new WrappedDataSource(target, config)` / Spring Starter | Code change or dependency | Full control, unit and integration testing |
-| Mode 2 Driver/URL proxy | Prefix the JDBC URL with `jdbc:jdbcmon:` | Zero code, config only | When code changes are not possible; connection pool config |
-| Mode 3 javaagent | `-javaagent:jdbcmon-agent.jar` | Zero | Covering internally created data sources |
+| 模式 | 方式 | 侵入性 | 适用场景 |
+|------|------|--------|----------|
+| 模式1 显式包装 | `new WrappedDataSource(target, config)` / Spring Starter | 需改代码或加依赖 | 完全掌控、单元与集成测试 |
+| 模式2 Driver/URL 代理 | JDBC URL 加 `jdbc:jdbcmon:` 前缀 | 零代码，仅改配置 | 不便改代码、连接池配置接入 |
+| 模式3 javaagent | `-javaagent:jdbcmon-agent.jar` | 零 | 需覆盖框架内部创建的数据源 |
 
-### Mode 2: Driver/URL proxy
+### 模式2：Driver/URL 代理
 
-Add the `jdbcmon-driver` dependency and prefix the JDBC URL:
+引入 `jdbcmon-driver` 依赖后，仅需在 JDBC URL 前追加前缀：
 
 ```
-Original URL : jdbc:mysql://host:3306/db
-Proxied  URL : jdbc:jdbcmon:mysql://host:3306/db
+原始 URL：jdbc:mysql://host:3306/db
+代理 URL：jdbc:jdbcmon:mysql://host:3306/db
 ```
 
-HikariCP example (properties):
+连接池以 HikariCP 为例（properties）：
 
 ```properties
 spring.datasource.driver-class-name=cn.itcraft.jdbcmon.driver.JdbcMonDriver
 spring.datasource.url=jdbc:jdbcmon:mysql://host:3306/db
 ```
 
-Optional configuration, resolved with the priority classpath `jdbcmon.properties` > system property `jdbcmon.*` > built-in defaults:
+可选配置项，来源优先级为 classpath 下 `jdbcmon.properties` > 系统属性 `jdbcmon.*` > 内置默认值：
 
 ```properties
 jdbcmon.sampleRate=10000
@@ -84,44 +84,44 @@ jdbcmon.hugeResultSetThreshold=2000
 jdbcmon.hugeResultSetAction=NOTIFY_IMMEDIATE
 ```
 
-Note: sampling defaults to 100 basis points (1%); set `jdbcmon.sampleRate=10000` for full capture.
+提示：采样默认万分比 100（1%），全量采集请显式设置 `jdbcmon.sampleRate=10000`。
 
-### Mode 3: javaagent
+### 模式3：javaagent
 
-Attach `jdbcmon-agent.jar` to the JVM startup options. No code or data source changes are required:
+将 `jdbcmon-agent.jar` 挂载到 JVM 启动参数即可，无需改动代码或数据源配置：
 
 ```bash
 java -javaagent:/path/to/jdbcmon-agent.jar -jar app.jar
 ```
 
-Optional agent arguments (separated by `;` after `=`):
+可选参数（`=` 之后以 `;` 分隔）：
 
 ```bash
 java -javaagent:/path/to/jdbcmon-agent.jar=sampleRate=10000;slowQueryThresholdMs=1000 -jar app.jar
 ```
 
-Configuration priority: agent arguments > system properties `jdbcmon.*` > classpath `jdbcmon.properties` > defaults.
+配置优先级：agent 参数 > 系统属性 `jdbcmon.*` > classpath `jdbcmon.properties` > 默认。
 
-The agent instruments all JDBC driver `connect` calls and wraps connections automatically, which suits cases where connections are created internally by a framework and cannot be wrapped explicitly.
+agent 会拦截所有 JDBC 驱动的 `connect` 调用并自动包装连接，适用于连接由框架内部创建、无法显式包装的场景。
 
-## Multi-Version Build
+## 多版本构建
 
 ```bash
-# Build JDK 8 version
+# 构建 JDK 8 版本
 export JAVA_HOME=/home/helly/lang/jdk8
 mvn clean install -Pjdk8
 
-# Build JDK 17 version (recommended)
+# 构建 JDK 17 版本（推荐）
 export JAVA_HOME=/home/helly/lang/jdk17
 mvn clean install -Pjdk17
 
-# Or use build script
+# 或使用构建脚本
 ./build.sh
 ```
 
-## Spring Boot Integration
+## Spring Boot 集成
 
-### Maven Dependency
+### Maven 依赖
 
 ```xml
 <dependency>
@@ -131,7 +131,7 @@ mvn clean install -Pjdk17
 </dependency>
 ```
 
-### Configuration Properties
+### 配置属性
 
 ```yaml
 jdbcmon:
@@ -143,7 +143,7 @@ jdbcmon:
   huge-result-set-action: NOTIFY_IMMEDIATE
 ```
 
-## Listener Extension
+## 监听器扩展
 
 ```java
 import cn.itcraft.jdbcmon.listener.SqlExecutionListener;
@@ -160,19 +160,19 @@ public class CustomListener implements SqlExecutionListener {
         switch (event.getEventType()) {
             case SUCCESS:
                 SuccessEvent success = (SuccessEvent) event;
-                // Handle successful execution
+                // 处理成功执行
                 break;
             case FAILURE:
                 FailureEvent failure = (FailureEvent) event;
-                // Handle execution failure
+                // 处理执行失败
                 break;
             case SLOW_QUERY:
                 SlowQueryEvent slow = (SlowQueryEvent) event;
-                // Handle slow query
+                // 处理慢查询
                 break;
             case HUGE_RESULT_SET:
                 HugeResultSetEvent huge = (HugeResultSetEvent) event;
-                // Handle huge result set
+                // 处理大结果集
                 break;
         }
     }
@@ -181,60 +181,60 @@ public class CustomListener implements SqlExecutionListener {
 sqlMonitor.addListener(new CustomListener());
 ```
 
-## Performance Benchmarks
+## 性能基准
 
-### JDK 17 (Recommended)
+### JDK 17（推荐）
 
-| Scenario | Direct | Proxied | Overhead |
-|----------|--------|---------|----------|
+| 场景 | Direct | Proxied | 开销 |
+|------|--------|---------|------|
 | PreparedQuery | 1,802,693 ops/s | 1,744,145 ops/s | **3.2%** |
 | MultiRowQuery | 564,842 ops/s | 466,772 ops/s | **17.4%** |
 | Insert | 788,785 ops/s | 746,455 ops/s | **5.4%** |
 | Update | 551,891 ops/s | 541,953 ops/s | **1.8%** |
-| ResultSet (10000 rows) | 4,661 ops/s | 4,124 ops/s | **11.5%** |
+| ResultSet (10000行) | 4,661 ops/s | 4,124 ops/s | **11.5%** |
 
 ### JDK 8
 
-| Scenario | Direct | Proxied | Overhead |
-|----------|--------|---------|----------|
+| 场景 | Direct | Proxied | 开销 |
+|------|--------|---------|------|
 | PreparedQuery | 302,096 ops/s | 277,258 ops/s | **8.2%** |
 | MultiRowQuery | 153,412 ops/s | 153,909 ops/s | **-0.3%** |
 | Insert | 305,411 ops/s | 290,696 ops/s | **4.8%** |
-| ResultSet (10000 rows) | 4,477 ops/s | 4,040 ops/s | **9.8%** |
+| ResultSet (10000行) | 4,477 ops/s | 4,040 ops/s | **9.8%** |
 
-### Conclusions
+### 结论
 
-- **JDK 17 Recommended**: High throughput (3-5x JDK 8), stable proxy overhead (1-12%)
-- **JDK 8 Usable**: 1-10% overhead, some scenarios show variance
-- **ResultSet Monitoring Overhead**: Full read 10-12%, partial read < 5%
+- **JDK 17 推荐使用**：吞吐量高（3-5倍于 JDK 8），代理开销稳定（1-12%）
+- **JDK 8 可用**：开销 1-10%，部分场景波动较大
+- **ResultSet 监控开销**：全量读取 10-12%，部分读取 < 5%
 
-## Usage Scenarios
+## 适用场景
 
-| Scenario | Recommendation | Description |
-|----------|----------------|-------------|
-| Functional Testing | ✅✅✅ | Fully suitable, negligible overhead |
-| Integration Testing | ✅✅✅ | Fully suitable, helps identify issues |
-| Staging Environment | ✅✅ | Recommended for pre-production validation |
-| Production | ✅ | Usable, recommend JDK 17 with essential monitoring |
+| 场景 | 推荐度 | 说明 |
+|------|-------|------|
+| 功能测试 | ✅✅✅ | 完全适用，开销可忽略 |
+| 集成测试 | ✅✅✅ | 完全适用，便于发现问题 |
+| 预发布环境 | ✅✅ | 推荐使用，生产前验证 |
+| 生产环境 | ✅ | 可用，建议 JDK 17，开启必要监控 |
 
-## Core Value
+## 核心价值
 
-1. **Zero Intrusion** - No business code modification required, transparent integration
-2. **Low Overhead** - Query < 10%, meets design goals, fully suitable for functional testing
-3. **Observable** - Slow queries, huge result sets, error monitoring, comprehensive coverage
-4. **Extensible** - Strategy pattern + event system, easy to customize
+1. **零侵入** - 无需修改业务代码，透明接入
+2. **低开销** - Query < 10%，符合设计目标，功能测试场景完全适用
+3. **可观测** - 慢查询、大结果集、错误监控，全面覆盖
+4. **可扩展** - 策略模式 + 事件体系，易于定制
 
-## Module Structure
+## 模块结构
 
 ```
 jdbcmon/
-├── jdbcmon-core/           # Core module (JDK 8/17 dual versions)
-├── jdbcmon-driver/         # Driver/URL proxy integration (Mode 2)
-├── jdbcmon-agent/          # javaagent zero-intrusion integration (Mode 3)
-├── jdbcmon-spring/         # Spring Boot integration (requires JDK 17+)
-└── jdbcmon-test/           # Integration tests & JMH benchmarks
+├── jdbcmon-core/           # 核心模块（JDK 8/17 双版本）
+├── jdbcmon-driver/         # Driver/URL 代理接入（模式2）
+├── jdbcmon-agent/          # javaagent 零侵入接入（模式3）
+├── jdbcmon-spring/         # Spring Boot 集成（需 JDK 17+）
+└── jdbcmon-test/           # 集成测试 & JMH 基准测试
 ```
 
-## License
+## 许可证
 
 MIT License

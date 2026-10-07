@@ -1,5 +1,7 @@
 # jdbcmon 使用手册
 
+[English Manual](manual_en.md)
+
 本手册面向使用与运维人员，说明 jdbcmon 的接入方式、配置、监控能力与常见问题。架构与设计文档见 README 与 AGENTS.md。
 
 ## 目录
